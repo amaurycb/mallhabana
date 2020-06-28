@@ -33,10 +33,9 @@ class Mallhabana extends Module {
         }
     
         return parent::install() &&
-            // $this->registerHook('header') &&
-            // $this->registerHook('displayProductAdditionalInfo') &&
+            $this->registerHook('displayHeader') &&
+            $this->registerHook('displayLeftColumnProduct') &&
             $this->registerHook('filterProductSearch') &&
-            $this->registerHook('loadProductPage') &&
             Configuration::updateValue('MALLHABANA', 'Funciones complementarias para MallHabana.com');
     }
 
@@ -138,13 +137,14 @@ class Mallhabana extends Module {
     }
 
     //Show aditional info on product view
-    public function hookDisplayLeftColumnProduct($params) {   
+    public function hookDisplayLeftColumnProduct($params) { 
+        $languageId = (int)($params['cookie']->id_lang);
         try {         
             $product = new Product(Tools::getValue('id_product'));
             //Redirect if there is not stock
-            if ($product->quantity == 0) {
-                setcookie("mallhabana_stock_redirection", str_replace(" ", "&nbsp", Configuration::get('NO_STOCK_MESSAGE')), time()+ 8 );
-                Tools::redirect(Configuration::get('NO_STOCK_REDIRECTION'));
+            if (empty($product->quantity)) {
+                $this->warning[] = Tools::displayError("<b>".$product->name[$languageId]."</b>. ".Configuration::get('NO_STOCK_MESSAGE'));
+                $this->redirectWithNotifications(Configuration::get('NO_STOCK_REDIRECTION'));
             }
             //Specify another product data
             //die('Disponible para toda Cuba');
@@ -152,6 +152,30 @@ class Mallhabana extends Module {
            $this->logger->logDebug($e->getMessage()); 
             return false;
         }         
+    }
+
+    /**
+     * Redirect with messages
+     */
+    private function redirectWithNotifications()
+    {
+        $notifications = json_encode(array(
+            'error' => $this->errors,
+            'warning' => $this->warning,
+            'success' => $this->success,
+            'info' => $this->info,
+        ));
+
+        if (session_status() == PHP_SESSION_ACTIVE) {
+            $_SESSION['notifications'] = $notifications;
+        } elseif (session_status() == PHP_SESSION_NONE) {
+            session_start();
+            $_SESSION['notifications'] = $notifications;
+        } else {
+            setcookie('notifications', $notifications);
+        }
+
+        return call_user_func_array(array('Tools', 'redirect'), func_get_args());
     }
 
     //Filter product search
