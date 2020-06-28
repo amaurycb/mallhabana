@@ -1,0 +1,5 @@
+cubacel:
+    path: cubacel/index
+    methods: [GET]
+    defaults:
+      _controller: 'cubacel\controllers\CubacelController::indexAction'
