@@ -141,11 +141,20 @@ class Mallhabana extends Module {
         $languageId = (int)($params['cookie']->id_lang);
         try {         
             $product = new Product(Tools::getValue('id_product'));
-            //Redirect if there is not stock
-            if (empty($product->quantity)) {
+            $hasQty = $product->quantity > 0;
+
+            $attributes = $product->getAttributesResume($languageId);
+            foreach ($attributes as $attribute) {
+                $id_product_attribute = $attribute['id_product_attribute'];
+                $qty = StockAvailable::getQuantityAvailableByProduct((int) Tools::getValue('id_product'), $id_product_attribute);
+                $hasQty = $hasQty ? : $qty > 0;
+            }
+
+            if (!$hasQty) {
                 $this->warning[] = Tools::displayError("<b>".$product->name[$languageId]."</b>. ".Configuration::get('NO_STOCK_MESSAGE'));
                 $this->redirectWithNotifications(Configuration::get('NO_STOCK_REDIRECTION'));
             }
+
             //Specify another product data
             //die('Disponible para toda Cuba');
         } catch (Exception $e) {
@@ -179,8 +188,8 @@ class Mallhabana extends Module {
     }
 
     //Filter product search
-    public function hookFilterProductSearch($params) {
-        $this->logger->logDebug($params); 
+    public function hookFilterProductSearch(&$params) {
+       
     }
     
     /**
