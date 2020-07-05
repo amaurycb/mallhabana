@@ -3,6 +3,8 @@ if (!defined('_PS_VERSION_')) {
     exit;
 }
 
+require_once __DIR__. '/classes/Service.php';
+
 class Mallhabana extends Module {
     
     public function __construct() {
@@ -13,6 +15,7 @@ class Mallhabana extends Module {
         $this->need_instance = 0;
         $this->ps_versions_compliancy =  ['min' => '1.7', 'max' => _PS_VERSION_];
         $this->bootstrap = true;
+        $this->service = new Service();
 
         parent::__construct();
 
@@ -33,9 +36,11 @@ class Mallhabana extends Module {
         }
     
         return parent::install() &&
+            $this->registerHook('header') &&
             $this->registerHook('displayHeader') &&
             $this->registerHook('displayLeftColumnProduct') &&
             $this->registerHook('filterProductSearch') &&
+            $this->registerHook('actionOrderStatusPostUpdate') &&
             Configuration::updateValue('MALLHABANA', 'Funciones complementarias para MallHabana.com');
     }
 
@@ -188,8 +193,22 @@ class Mallhabana extends Module {
     }
 
     //Filter product search
-    public function hookFilterProductSearch(&$params) {
-       
+    public function hookFilterProductSearch($params) {
+        // $searchVariables = $params['searchVariables'];
+        $products = $params['searchVariables']['result']->getProducts();
+        $filter = [];
+
+        foreach($products as $product) {
+            if ((int) $product['quantity'] > 0) {
+                $filter[] = $product;
+            }
+        }
+        $params['searchVariables']['result']->setProducts($filter)->setTotalProductsCount(count($filter));
+        return $params['searchVariables'];
+        // var_dump($searchVariables);die;
+
+        // return $params['searchVariables']['result'];
+        // $this->logger->logDebug($params); 
     }
     
     /**
@@ -197,6 +216,11 @@ class Mallhabana extends Module {
      */
     public function hookDisplayHeader() {
         $this->context->controller->addJS($this->_path.'views/js/front.js');
+    }
+
+    public function hookActionOrderStatusPostUpdate($params) {
+        $this->service->generateQr($params['id_order']);
+        $this->service->generateBarcode($params['id_order']);
     }
 
    
