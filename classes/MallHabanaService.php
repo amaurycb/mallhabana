@@ -1,6 +1,5 @@
 <?php
-class Service {
-
+class MallHabanaService {
     /**
      * Generate QR code
      *  
