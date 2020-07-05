@@ -41,10 +41,15 @@ class Mallhabana extends Module {
             $this->registerHook('displayLeftColumnProduct') &&
             $this->registerHook('filterProductSearch') &&
             $this->registerHook('actionOrderStatusPostUpdate') &&
+            $this->registerHook('displayPDFInvoice') &&            
+            $this->registerHook('displayPDFDeliverySlip') &&            
             Configuration::updateValue('MALLHABANA', 'Funciones complementarias para MallHabana.com');
     }
 
-    public function uninstall() {      
+    public function uninstall() {     
+        Configuration::deleteByName('NO_STOCK_REDIRECTION');
+        Configuration::deleteByName('NO_STOCK_MESSAGE');
+        Configuration::deleteByName('SITE_URL'); 
         return !(!parent::uninstall() || !Configuration::deleteByName('MALLHABANA')) ;
     }
 
@@ -95,7 +100,15 @@ class Mallhabana extends Module {
                     'name' => 'MALLHABANA[NO_STOCK_MESSAGE]',
                     'required' => true,
                     'cols' => 2,
-                ]
+                ],  
+                [
+                    'type' => 'text',
+                    'label' => $this->l('Url base de la tienda'),
+                    'name' => 'MALLHABANA[SITE_URL]',
+                    'required' => true,
+                    'cols' => 2,
+                    'prefix' => '<i class="icon-link"></i>'
+                ],
             ],
             'submit' => [
                 'title' => $this->l('Save'),
@@ -135,7 +148,8 @@ class Mallhabana extends Module {
         // Load current value
         $helper->fields_value = [
             'MALLHABANA[NO_STOCK_REDIRECTION]'      => Configuration::get('NO_STOCK_REDIRECTION'),
-            'MALLHABANA[NO_STOCK_MESSAGE]'          => Configuration::get('NO_STOCK_MESSAGE')
+            'MALLHABANA[NO_STOCK_MESSAGE]'          => Configuration::get('NO_STOCK_MESSAGE'),
+            'MALLHABANA[SITE_URL]'                  => Configuration::get('SITE_URL')
         ];
 
         return $helper->generateForm($fieldsForm);
@@ -221,6 +235,30 @@ class Mallhabana extends Module {
     public function hookActionOrderStatusPostUpdate($params) {
         $this->service->generateQr($params['id_order']);
         $this->service->generateBarcode($params['id_order']);
+    }
+
+    public function hookDisplayPDFInvoice($params) {
+        $idOrder = $params['object']->id_order;
+        $this->smarty->assign(
+            [
+                'url_code_qr'       => Configuration::get('SITE_URL').'img/codes/qr/'.$idOrder.".jpg",
+                'url_code_barcode'  => Configuration::get('SITE_URL').'img/codes/barcode/'.$idOrder.".jpg",
+                'id_order'          => $idOrder
+            ]
+        );
+        return $this->display(__FILE__, 'order_reference_codes.tpl');
+    }
+
+    public function hookDisplayPDFDeliverySlip($params) {
+        $idOrder = $params['object']->id_order;
+        $this->smarty->assign(
+            [
+                'url_code_qr'       => Configuration::get('SITE_URL').'img/codes/qr/'.$idOrder.".jpg",
+                'url_code_barcode'  => Configuration::get('SITE_URL').'img/codes/barcode/'.$idOrder.".jpg",
+                'id_order'          => $idOrder
+            ]
+        );
+        return $this->display(__FILE__, 'order_reference_codes.tpl');
     }
 
    
