@@ -43,4 +43,43 @@ class MallHabanaService {
         }
         return true;
     }
+
+    /**
+     * Get Destiny info by product id
+     *  
+     * @param int $idProduct
+     * 
+     * @return string
+     */
+    public function getDestinyInfo($idProduct){
+        $carriers = (Db::getInstance())->executeS((new DbQuery())
+        ->from('product_carrier', 'pc')
+        ->innerJoin('carrier', 'c', 'c.id_carrier=pc.id_carrier')
+        ->where("c.active = 1")
+        ->where("pc.id_product = '$idProduct'"));
+
+        if (count($carriers) > 0) {
+             $carriers = (Db::getInstance())->executeS((new DbQuery())
+            ->from('carrier', 'c')
+            ->where("c.active = 1"));
+        }
+        $destiniesAvalilable = $this->getZoneByCarrier($carriers);
+        return implode(', ', $destiniesAvalilable);
+    }
+
+    private function getZoneByCarrier($carriers) {
+        $zones = [];
+        foreach ($carriers as $carrier) {           
+            $zonesAvailables = (Db::getInstance())->executeS((new DbQuery())
+                            ->from('carrier_zone', 'cz')
+                            ->innerJoin('zone', 'cf', 'cf.id_zone=cz.id_zone')
+                            ->where('cz.id_carrier = ' . $carrier['id_carrier']));
+            if (count($zonesAvailables) > 0) {
+                foreach ($zonesAvailables as $zone) {
+                    $zones[] = $zone['name'];
+                }
+            }
+        }
+        return array_unique($zones);
+    }
 }

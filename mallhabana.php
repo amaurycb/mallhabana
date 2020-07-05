@@ -159,18 +159,20 @@ class Mallhabana extends Module {
         return $helper->generateForm($fieldsForm);
     }
 
-    //Show aditional info on product view
+     /**
+     * Show aditional info on product view. Redirect to another page if the product does not have stock.
+     */
     public function hookDisplayLeftColumnProduct($params) { 
         $languageId = (int)($params['cookie']->id_lang);
         try {         
             $product = new Product(Tools::getValue('id_product'));
-            $hasQty = $product->quantity > 0;
+            $hasQty = StockAvailable::getQuantityAvailableByProduct((int) Tools::getValue('id_product'));
 
             $attributes = $product->getAttributesResume($languageId);
             foreach ($attributes as $attribute) {
                 $id_product_attribute = $attribute['id_product_attribute'];
                 $qty = StockAvailable::getQuantityAvailableByProduct((int) Tools::getValue('id_product'), $id_product_attribute);
-                $hasQty = $hasQty ? : $qty > 0;
+                $hasQty = ($hasQty ? : $qty > 0);
             }
 
             if (!$hasQty) {
@@ -178,8 +180,8 @@ class Mallhabana extends Module {
                 $this->redirectWithNotifications(Configuration::get('NO_STOCK_REDIRECTION'));
             }
 
-            //Specify another product data
-            //die('Disponible para toda Cuba');
+            return '<br/><a class="title_font print_product ml-0" href="javascript:void();"><i class="zmdi zmdi-bus"></i>DISPONIBLE PARA:</a>'.$this->service->getDestinyInfo((int)Tools::getValue('id_product'));
+
         } catch (Exception $e) {
            $this->logger->logDebug($e->getMessage()); 
             return false;
@@ -210,9 +212,10 @@ class Mallhabana extends Module {
         return call_user_func_array(array('Tools', 'redirect'), func_get_args());
     }
 
-    //Filter product search
+     /**
+     * Filter proucto search. The idea is only show in stock productos on search result.
+     */
     public function hookFilterProductSearch($params) {
-        // $searchVariables = $params['searchVariables'];
         $products = $params['searchVariables']['result']->getProducts();
         $filter = [];
 
@@ -223,10 +226,7 @@ class Mallhabana extends Module {
         }
         $params['searchVariables']['result']->setProducts($filter)->setTotalProductsCount(count($filter));
         return $params['searchVariables'];
-        // var_dump($searchVariables);die;
-
-        // return $params['searchVariables']['result'];
-        // $this->logger->logDebug($params); 
+        
     }
     
     /**
@@ -241,11 +241,17 @@ class Mallhabana extends Module {
         $this->service->generateBarcode($params['id_order']);
     }
 
+    /**
+     * Display Qr and Barcode on invoice PDF
+     */
     public function hookDisplayPDFInvoice($params) {
         $idOrder = $params['object']->id_order;
         return $this->getSmartyVariablesPDF($idOrder);
     }
 
+    /**
+     * Display Qr and Barcode on delivery PDF
+     */
     public function hookDisplayPDFDeliverySlip($params) {
         $idOrder = $params['object']->id_order;
         return $this->getSmartyVariablesPDF($idOrder);
