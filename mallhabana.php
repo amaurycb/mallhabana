@@ -3,7 +3,7 @@ if (!defined('_PS_VERSION_')) {
     exit;
 }
 
-require_once __DIR__. '/classes/Service.php';
+require_once __DIR__. '/classes/MallHabanaService.php';
 
 class Mallhabana extends Module {
     
@@ -15,7 +15,7 @@ class Mallhabana extends Module {
         $this->need_instance = 0;
         $this->ps_versions_compliancy =  ['min' => '1.7', 'max' => _PS_VERSION_];
         $this->bootstrap = true;
-        $this->service = new Service();
+        $this->service = new MallHabanaService();
 
         parent::__construct();
 
@@ -35,6 +35,10 @@ class Mallhabana extends Module {
             Shop::setContext(Shop::CONTEXT_ALL);
         }
     
+        mkdir( _PS_ROOT_DIR_."/img/codes", 777);
+        mkdir( _PS_ROOT_DIR_."/img/codes/qr", 777);
+        mkdir( _PS_ROOT_DIR_."/img/codes/barcode", 777);
+
         return parent::install() &&
             $this->registerHook('header') &&
             $this->registerHook('displayHeader') &&
@@ -239,18 +243,17 @@ class Mallhabana extends Module {
 
     public function hookDisplayPDFInvoice($params) {
         $idOrder = $params['object']->id_order;
-        $this->smarty->assign(
-            [
-                'url_code_qr'       => Configuration::get('SITE_URL').'img/codes/qr/'.$idOrder.".jpg",
-                'url_code_barcode'  => Configuration::get('SITE_URL').'img/codes/barcode/'.$idOrder.".jpg",
-                'id_order'          => $idOrder
-            ]
-        );
-        return $this->display(__FILE__, 'order_reference_codes.tpl');
+        return $this->getSmartyVariablesPDF($idOrder);
     }
 
     public function hookDisplayPDFDeliverySlip($params) {
         $idOrder = $params['object']->id_order;
+        return $this->getSmartyVariablesPDF($idOrder);
+    }
+
+    private function getSmartyVariablesPDF($idOrder) {
+        $this->service->generateQr($idOrder);
+        $this->service->generateBarcode($idOrder);
         $this->smarty->assign(
             [
                 'url_code_qr'       => Configuration::get('SITE_URL').'img/codes/qr/'.$idOrder.".jpg",
@@ -259,7 +262,6 @@ class Mallhabana extends Module {
             ]
         );
         return $this->display(__FILE__, 'order_reference_codes.tpl');
-    }
-
+    } 
    
 }
