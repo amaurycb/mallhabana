@@ -216,7 +216,7 @@ class Mallhabana extends Module {
      * Filter proucto search. The idea is only show in stock productos on search result.
      */
     public function hookFilterProductSearch($params) {
-        $products = $params['searchVariables']['result']->getProducts();
+        $products = $params['searchVariables']['products'];
         $filter = [];
 
         foreach($products as $product) {
@@ -224,9 +224,9 @@ class Mallhabana extends Module {
                 $filter[] = $product;
             }
         }
-        $params['searchVariables']['result']->setProducts($filter)->setTotalProductsCount(count($filter));
-        return $params['searchVariables'];
         
+        $params['searchVariables']['products'] = $filter;
+        return $params['searchVariables'];        
     }
     
     /**
