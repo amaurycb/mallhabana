@@ -191,8 +191,7 @@ class Mallhabana extends Module {
     /**
      * Redirect with messages
      */
-    private function redirectWithNotifications()
-    {
+    private function redirectWithNotifications() {
         $notifications = json_encode(array(
             'error' => $this->errors,
             'warning' => $this->warning,
@@ -224,7 +223,7 @@ class Mallhabana extends Module {
                 $filter[] = $product;
             }
         }
-        
+
         $params['searchVariables']['products'] = $filter;
         return $params['searchVariables'];        
     }
@@ -269,5 +268,59 @@ class Mallhabana extends Module {
         );
         return $this->display(__FILE__, 'order_reference_codes.tpl');
     } 
+
+    private function installTab() {
+        $languages = Language::getLanguages(false);
+
+        //Main Parent menu
+        if (!(int) Tab::getIdFromClassName('AdminMallhabana')) {
+            $parentTab = new Tab();
+            $parentTab->active = 1;
+            $parentTab->name = array();
+            $parentTab->class_name = "AdminMallhabana";
+            foreach ($languages as $language) {
+                $parentTab->name[$language['id_lang']] = 'MallHabana';
+            }
+            $parentTab->id_parent = 0;
+            $parentTab->module = '';
+            $parentTab->add();
+        }
+
+        if (!(int) Tab::getIdFromClassName('AdminMallhabanaSupply')) {
+            $parentTabID = Tab::getIdFromClassName('AdminMallhabana');
+            $parentTab = new Tab($parentTabID);
+
+            $tab = new Tab();
+            $tab->active = 1;
+            $tab->class_name = "AdminMallhabanaSupply";
+            $tab->name = array();
+            foreach ($languages as $language) {
+                $tab->name[$language['id_lang']] = $this->l('Despacho');
+            }
+            $tab->id_parent = $parentTab->id;
+            $tab->icon = 'list';
+            $tab->module = $this->name;
+            $tab->add();
+        }
+    }
+
+    public function enable($force_all = false) {
+        $this->installTab();
+        return parent::enable($force_all);
+    }
+
+    public function disable($force_all = false) {
+        return parent::disable($force_all) && $this->uninstallTab();
+    }
+    
+    private function uninstallTab() {
+        return true;
+        $tabId = (int) Tab::getIdFromClassName('AdminMallhabana');
+        if (!$tabId) {
+            return true;
+        }
+        $tab = new Tab($tabId);
+        return $tab->delete();
+    }
    
 }
