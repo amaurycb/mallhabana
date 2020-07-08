@@ -7,24 +7,23 @@ class AdminMallhabanaSupplyController extends ModuleAdminController {
      public function __construct() {
         parent::__construct();
 
-        $this->_select = 'o.reference as reference, c.name as carrier_name';
+        $this->_select = 'c.name as carrier_name';
         $this->_join = '
-          JOIN '._DB_PREFIX_.'orders o ON (o.id_order = a.id_order)
           JOIN '._DB_PREFIX_.'carrier c ON (c.id_carrier = a.id_carrier)
         ';
         //Filter list by order status
-        $this->_where = 'AND o.current_state = 3';
+        $this->_where = 'AND a.current_state = 3';
 
         $this->bootstrap = true; 
-        $this->table = OrderCarrierCore::$definition['table'];
-        $this->identifier = OrderCarrierCore::$definition['primary']; 
-        $this->className = OrderCarrierCore::class;
+        $this->table = Order::$definition['table'];
+        $this->identifier = Order::$definition['primary']; 
+        $this->className = Order::class;
         $this->allow_export = true;
         $this->lang = false; 
-        $this->_defaultOrderBy = OrderCarrierCore::$definition['primary'];
+        $this->_defaultOrderBy = Order::$definition['primary'];
 
         $this->fields_list = array(
-            'id_order_carrier' => array(
+            'id_order' => array(
                 'title' => $this->module->l('ID'), 
                 'align' => 'text-center',
                 'class' => 'fixed-width-xs',
@@ -45,7 +44,7 @@ class AdminMallhabanaSupplyController extends ModuleAdminController {
                 'align' => 'text-center',
                 // 'class' => 'fixed-width-lg'
             ),
-            'shipping_cost_tax_incl' => array(
+            'total_shipping' => array(
                 'title' => $this->module->l('Costo de transportación'),
                 'align' => 'text-right',
                 'type' => 'price',
@@ -65,8 +64,9 @@ class AdminMallhabanaSupplyController extends ModuleAdminController {
         return parent::renderForm();
     }
 
-    public function renderList() {     
-        $this->addRowAction('view');
+    public function renderList() { 
+        //Custom action in datatable row    
+        $this->addRowAction('printOrder');
         return parent::renderList();
     }
    
@@ -76,14 +76,13 @@ class AdminMallhabanaSupplyController extends ModuleAdminController {
         return parent::viewAccess($disable);
     }
 
-    public function renderView()
-    {
+    public function renderView() {
         return parent::renderView();
     } 
 
-    protected function processBulkprintDeliveryNotes(){
-        $ordersCarrier = $_POST['order_carrierBox'];
-        $orderCollection = $this->getOrdersForPrint($ordersCarrier);
+    public function processBulkprintDeliveryNotes(){
+        $orders = $_POST['ordersBox'];
+        $orderCollection = $this->getOrdersForPrint($orders);
 
         $pdf = new PDF($orderCollection, PDF::TEMPLATE_DELIVERY_SLIP, Context::getContext()->smarty);
         return $pdf->render(true);
@@ -92,16 +91,25 @@ class AdminMallhabanaSupplyController extends ModuleAdminController {
     /**
      * Format data for printing document
      */
-    private function getOrdersForPrint($orderCarrier) {
+    private function getOrdersForPrint($orders) {
         $order_invoice_list = Db::getInstance()->executeS('
             SELECT oi.*
             FROM `' . _DB_PREFIX_ . 'orders` o 
             LEFT JOIN `' . _DB_PREFIX_ . 'order_invoice` oi ON (o.`id_order` = oi.`id_order`)
-            LEFT JOIN `' . _DB_PREFIX_ . 'order_carrier` oc ON (o.`id_order` = oc.`id_order`)
-            WHERE oc.id_order_carrier IN ('.implode(",", $orderCarrier).')
+            WHERE o.id_order IN ('.implode(",", $orders).')
             ORDER BY oi.delivery_date ASC
         ');
 
         return ObjectModel::hydrateCollection('OrderInvoice', $order_invoice_list);
+    }
+
+    /**
+     * Format button for custom datatable action row
+     */
+    public function displayPrintOrderLink($token = null, $id, $name = null) {
+        $href = $this->context->link->getAdminLink('AdminMallhabanaSupply').'&'.$this->identifier.'='.$id.'&action=printOrder';
+        return '<form action="$href" method="POST"><button type="submit" class="btn btn-default" title="Imprimir">
+                    <i class="icon-print"></i> Imprimir
+                </button></form>';
     }
 }
