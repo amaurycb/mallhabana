@@ -177,7 +177,12 @@ class Mallhabana extends Module {
 
             if (!$hasQty) {
                 $this->warning[] = Tools::displayError("<b>".$product->name[$languageId]."</b>. ".Configuration::get('NO_STOCK_MESSAGE'));
-                $this->redirectWithNotifications(Configuration::get('NO_STOCK_REDIRECTION'));
+                $this->service->redirectWithNotifications([
+                    'error' => $this->errors,
+                    'warning' => $this->warning,
+                    'success' => $this->success,
+                    'info' => $this->info,
+                ],Configuration::get('NO_STOCK_REDIRECTION'));
             }
 
             return '<br/><a class="title_font print_product ml-0" href="javascript:void();"><i class="zmdi zmdi-bus"></i>DISPONIBLE PARA:</a>'.$this->service->getDestinyInfo((int)Tools::getValue('id_product'));
@@ -186,29 +191,6 @@ class Mallhabana extends Module {
            $this->logger->logDebug($e->getMessage()); 
             return false;
         }         
-    }
-
-    /**
-     * Redirect with messages
-     */
-    private function redirectWithNotifications() {
-        $notifications = json_encode(array(
-            'error' => $this->errors,
-            'warning' => $this->warning,
-            'success' => $this->success,
-            'info' => $this->info,
-        ));
-
-        if (session_status() == PHP_SESSION_ACTIVE) {
-            $_SESSION['notifications'] = $notifications;
-        } elseif (session_status() == PHP_SESSION_NONE) {
-            session_start();
-            $_SESSION['notifications'] = $notifications;
-        } else {
-            setcookie('notifications', $notifications);
-        }
-
-        return call_user_func_array(array('Tools', 'redirect'), func_get_args());
     }
 
      /**

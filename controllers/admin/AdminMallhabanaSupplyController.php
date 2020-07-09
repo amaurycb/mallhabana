@@ -1,5 +1,7 @@
 <?php
 
+require_once dirname(__FILE__) . '/../../classes/MallHabanaService.php';
+
 /**
  * Class CubacelBackController
  */
@@ -21,6 +23,7 @@ class AdminMallhabanaSupplyController extends ModuleAdminController {
         $this->allow_export = true;
         $this->lang = false; 
         $this->_defaultOrderBy = Order::$definition['primary'];
+        $this->service = new MallHabanaService();
 
         $this->fields_list = array(
             'id_order' => array(
@@ -122,6 +125,7 @@ class AdminMallhabanaSupplyController extends ModuleAdminController {
         $href = $this->context->link->getAdminLink('AdminMallhabanaSupply').'&action=printOrder';
         return '<form id="order'.$id.'" action="'.$href.'" method="POST">
                 <input type="hidden" value="'.$id.'" name="'.$this->identifier.'">
+                <input type="hidden" value="1" name="onlyOne">
                 <button type="submit" class="btn btn-default" title="Imprimir">
                     <i class="icon-print"></i> Imprimir
                 </button></form>';
@@ -133,14 +137,13 @@ class AdminMallhabanaSupplyController extends ModuleAdminController {
     public function postProcess() {
         try {
             $idOrder = (int)Tools::getValue($this->identifier);
-            $orders = (isset($_POST['ordersBox']) && count($_POST['ordersBox']) > 0)  ? $_POST['ordersBox'] : ($idOrder > 0 ? [$idOrder] : []);
-            if( count($orders) > 0){
+            $orders = Tools::isSubmit('submitBulkprintDeliveryNotesorders') ? $_POST['ordersBox'] : ($idOrder > 0 ? [$idOrder] : []);
+            if( count($orders) > 0) {
                 return $this->renderPdf($orders);
             }
         } catch (PrestaShopException $e) {
             $this->errors[] = $e->getMessage();
         }
         parent::postProcess();           
-
     }
 }

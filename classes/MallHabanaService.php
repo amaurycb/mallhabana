@@ -82,4 +82,23 @@ class MallHabanaService {
         }
         return array_unique($zones);
     }
+
+     /**
+     * Redirect with messages
+     */
+    public function redirectWithNotifications(array $messages, $url) {
+        $notifications = json_encode($messages);
+
+        if (session_status() == PHP_SESSION_ACTIVE) {
+            $_SESSION['notifications'] = $notifications;
+        } elseif (session_status() == PHP_SESSION_NONE) {
+            session_start();
+            $_SESSION['notifications'] = $notifications;
+        } else {
+            setcookie('notifications', $notifications);
+        }
+
+        return call_user_func_array(array('Tools', 'redirect'), [$url]);
+    }
+
 }
