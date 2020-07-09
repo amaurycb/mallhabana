@@ -64,8 +64,10 @@ class AdminMallhabanaSupplyController extends ModuleAdminController {
         return parent::renderForm();
     }
 
+    /**
+     * Add action print into order list
+     */
     public function renderList() { 
-        //Custom action in datatable row    
         $this->addRowAction('printOrder');
         return parent::renderList();
     }
@@ -80,8 +82,18 @@ class AdminMallhabanaSupplyController extends ModuleAdminController {
         return parent::renderView();
     } 
 
+    /**
+     * Bulk action for printing pdf
+     */
     public function processBulkprintDeliveryNotes(){
         $orders = $_POST['ordersBox'];
+        return $this->renderPdf($orders);
+    }
+
+    /**
+     * Render pdf
+     */
+    private function renderPdf ($orders) {        
         $orderCollection = $this->getOrdersForPrint($orders);
 
         $pdf = new PDF($orderCollection, PDF::TEMPLATE_DELIVERY_SLIP, Context::getContext()->smarty);
@@ -107,9 +119,27 @@ class AdminMallhabanaSupplyController extends ModuleAdminController {
      * Format button for custom datatable action row
      */
     public function displayPrintOrderLink($token = null, $id, $name = null) {
-        $href = $this->context->link->getAdminLink('AdminMallhabanaSupply').'&'.$this->identifier.'='.$id.'&action=printOrder';
-        return '<form action="$href" method="POST"><button type="submit" class="btn btn-default" title="Imprimir">
+        $href = $this->context->link->getAdminLink('AdminMallhabanaSupply').'&action=printOrder';
+        return '<form id="order'.$id.'" action="'.$href.'" method="POST">
+                <input type="hidden" value="'.$id.'" name="'.$this->identifier.'">
+                <button type="submit" class="btn btn-default" title="Imprimir">
                     <i class="icon-print"></i> Imprimir
                 </button></form>';
+    }
+
+    /**
+     * Print individual orders
+     */
+    public function postProcess() {
+        try {
+            $idOrder = (int)Tools::getValue($this->identifier);
+            if( $idOrder > 0){
+                return $this->renderPdf([$idOrder]);
+            } 
+        } catch (PrestaShopException $e) {
+            $this->errors[] = $e->getMessage();
+        }
+        parent::postProcess();           
+
     }
 }
