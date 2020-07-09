@@ -133,9 +133,10 @@ class AdminMallhabanaSupplyController extends ModuleAdminController {
     public function postProcess() {
         try {
             $idOrder = (int)Tools::getValue($this->identifier);
-            if( $idOrder > 0){
-                return $this->renderPdf([$idOrder]);
-            } 
+            $orders = (isset($_POST['ordersBox']) && count($_POST['ordersBox']) > 0)  ? $_POST['ordersBox'] : ($idOrder > 0 ? [$idOrder] : []);
+            if( count($orders) > 0){
+                return $this->renderPdf($orders);
+            }
         } catch (PrestaShopException $e) {
             $this->errors[] = $e->getMessage();
         }
