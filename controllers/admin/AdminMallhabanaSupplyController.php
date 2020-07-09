@@ -139,11 +139,25 @@ class AdminMallhabanaSupplyController extends ModuleAdminController {
             $idOrder = (int)Tools::getValue($this->identifier);
             $orders = Tools::isSubmit('submitBulkprintDeliveryNotesorders') ? $_POST['ordersBox'] : ($idOrder > 0 ? [$idOrder] : []);
             if( count($orders) > 0) {
+                $this->updateStatus($orders);
                 return $this->renderPdf($orders);
             }
         } catch (PrestaShopException $e) {
             $this->errors[] = $e->getMessage();
         }
         parent::postProcess();           
+    }
+
+    /**
+     * Update ordes status
+     */
+    private function updateStatus(array $orders) {
+        foreach ($orders as $order) {
+            $objOrder = new Order((int)$order);
+            $history = new OrderHistory();
+            $history->id_order = (int)$objOrder->id;
+            $history->changeIdOrderState(4, (int)($objOrder->id)); //order status=3
+            $history->add();
+        }
     }
 }
