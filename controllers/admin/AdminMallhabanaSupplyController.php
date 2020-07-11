@@ -9,24 +9,24 @@ class AdminMallhabanaSupplyController extends ModuleAdminController {
      public function __construct() {
         parent::__construct();
 
+        // Get statuses
+        $this->statuses = [];
+        $statuses = OrderState::getOrderStates((int) $this->context->language->id);
+        foreach ($statuses as $status) {
+            if (in_array($status['id_order_state'], [3,4])) {
+                $this->statuses[$status['name']] = $status['name'];
+            }
+        }
 
-
-        $this->_select = 'c.name as carrier_name, osl.name as state_name';
+        $this->_select = 'c.name as carrier_name, osl.name as state_name, os.color';
         $this->_join = '
           JOIN '._DB_PREFIX_.'carrier c ON (c.id_carrier = a.id_carrier)
+          LEFT JOIN '._DB_PREFIX_.'order_state os ON (os.id_order_state = a.current_state)
           LEFT JOIN '._DB_PREFIX_.'order_state_lang osl ON (osl.id_order_state = a.current_state AND osl.id_lang = 1)
         ';
+
         //Filter list by order status
         $this->_where = 'AND a.current_state IN (3,4) ';
-        // $state_name = Tools::getValue('state_name');
-
-        // if($state_name) 
-        //     $this->_where = 'AND UPPER(state_name) LIKE UPPER("%'.$state_name.'"%)';
-
-        // $sortBy = Tools::getValue('sortBy');
-        // $sortWay = Tools::getValue('sortWay', 'ASC'); // default sortWay is Ascending
-
-        // for example, your filter action URL is index.php?submitFilter&filter_id=1
      
         $this->bootstrap = true; 
         $this->table = Order::$definition['table'];
@@ -65,13 +65,17 @@ class AdminMallhabanaSupplyController extends ModuleAdminController {
                 'align' => 'text-right',
                 'type' => 'price',
                 'class' => 'fixed-width-xs'
-            ),            
+            ),        
             'state_name' => array(
                 'title' => $this->module->l('Estado'),
                 'align' => 'text-center',
                 'havingFilter' => true,
-                // 'type' => 'label',
-                // 'class' => 'fixed-width-md'
+                'type' => 'select',
+                'color' => 'color',
+                'list' => $this->statuses,
+                'filter_key' => 'state_name',
+                'filter_type' => 'text',
+                'order_key' => 'state_name'
             )
         );
 
@@ -81,10 +85,6 @@ class AdminMallhabanaSupplyController extends ModuleAdminController {
               'icon' => 'icon-print'
             ],
           ];
-    }
-
-    public function renderForm() {
-        return parent::renderForm();
     }
 
     /**
@@ -100,10 +100,6 @@ class AdminMallhabanaSupplyController extends ModuleAdminController {
             return true;
         return parent::viewAccess($disable);
     }
-
-    public function renderView() {
-        return parent::renderView();
-    } 
 
     /**
      * Bulk action for printing pdf
@@ -181,5 +177,13 @@ class AdminMallhabanaSupplyController extends ModuleAdminController {
             $history->changeIdOrderState(4, (int)($objOrder->id)); //order status=3
             $history->add();
         }
+    }
+    
+    /**
+     * Disable add button
+     */
+    public function initToolbar() {
+        parent::initToolbar();
+        unset( $this->toolbar_btn['new'] );
     }
 }
