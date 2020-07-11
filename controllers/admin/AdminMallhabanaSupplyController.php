@@ -9,13 +9,25 @@ class AdminMallhabanaSupplyController extends ModuleAdminController {
      public function __construct() {
         parent::__construct();
 
-        $this->_select = 'c.name as carrier_name';
+
+
+        $this->_select = 'c.name as carrier_name, osl.name as state_name';
         $this->_join = '
           JOIN '._DB_PREFIX_.'carrier c ON (c.id_carrier = a.id_carrier)
+          LEFT JOIN '._DB_PREFIX_.'order_state_lang osl ON (osl.id_order_state = a.current_state AND osl.id_lang = 1)
         ';
         //Filter list by order status
-        $this->_where = 'AND a.current_state = 3';
+        $this->_where = 'AND a.current_state IN (3,4) ';
+        // $state_name = Tools::getValue('state_name');
 
+        // if($state_name) 
+        //     $this->_where = 'AND UPPER(state_name) LIKE UPPER("%'.$state_name.'"%)';
+
+        // $sortBy = Tools::getValue('sortBy');
+        // $sortWay = Tools::getValue('sortWay', 'ASC'); // default sortWay is Ascending
+
+        // for example, your filter action URL is index.php?submitFilter&filter_id=1
+     
         $this->bootstrap = true; 
         $this->table = Order::$definition['table'];
         $this->identifier = Order::$definition['primary']; 
@@ -40,17 +52,25 @@ class AdminMallhabanaSupplyController extends ModuleAdminController {
                 'title' => $this->module->l('Fecha de la Orden'),
                 'align' => 'text-center',
                 'type'=>'datetime',
-                // 'class' => 'fixed-width-xs'
+                'class' => 'fixed-width-xs'
             ),            
             'carrier_name' => array(
                 'title' => $this->module->l('Transportista'),
                 'align' => 'text-center',
-                // 'class' => 'fixed-width-lg'
+                'havingFilter' => true,
+                'class' => 'fixed-width-lg'
             ),
             'total_shipping' => array(
                 'title' => $this->module->l('Costo de transportación'),
                 'align' => 'text-right',
                 'type' => 'price',
+                'class' => 'fixed-width-xs'
+            ),            
+            'state_name' => array(
+                'title' => $this->module->l('Estado'),
+                'align' => 'text-center',
+                'havingFilter' => true,
+                // 'type' => 'label',
                 // 'class' => 'fixed-width-md'
             )
         );
@@ -135,17 +155,19 @@ class AdminMallhabanaSupplyController extends ModuleAdminController {
      * Print individual orders
      */
     public function postProcess() {
-        try {
-            $idOrder = (int)Tools::getValue($this->identifier);
-            $orders = Tools::isSubmit('submitBulkprintDeliveryNotesorders') ? $_POST['ordersBox'] : ($idOrder > 0 ? [$idOrder] : []);
-            if( count($orders) > 0) {
-                $this->updateStatus($orders);
-                return $this->renderPdf($orders);
+        parent::postProcess();
+        if (Tools::getValue('action') == 'printOrder'){
+            try {
+                $idOrder = (int)Tools::getValue($this->identifier);
+                $orders = Tools::isSubmit('submitBulkprintDeliveryNotesorders') ? $_POST['ordersBox'] : ($idOrder > 0 ? [$idOrder] : []);
+                if( count($orders) > 0) {
+                    $this->updateStatus($orders);
+                    return $this->renderPdf($orders);
+                }
+            } catch (PrestaShopException $e) {
+                $this->errors[] = $e->getMessage();
             }
-        } catch (PrestaShopException $e) {
-            $this->errors[] = $e->getMessage();
-        }
-        parent::postProcess();           
+        }      
     }
 
     /**
