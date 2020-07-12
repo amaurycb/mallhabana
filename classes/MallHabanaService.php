@@ -101,4 +101,95 @@ class MallHabanaService {
         return call_user_func_array(array('Tools', 'redirect'), [$url]);
     }
 
+    /**
+     * get orders by provider and date
+     */
+    public function ordersByProviderAndDate( $month,  $year, $provider) {
+        $query = 'SELECT o.reference as reference, 
+                    osl.name as state_name,
+                    o.payment,
+                    CONCAT (c.firstname, " ", c.lastname) as client,
+                    CONCAT (a.firstname, " ", a.lastname) as destiny,
+                    o.date_add as created_at,
+                    oh.date_add as aproved,
+                    FORMAT(o.total_paid,2) AS paid,
+                    s.name as supplier_name,
+                    FORMAT(SUM(od.product_price * od.product_quantity),2) as supplier_total,
+                    carriers.carrier_name,
+                    FORMAT(o.total_shipping, 2) as shipping,
+                    "Pendiente" as embalaje,
+                    "Pendiente" as gain,
+                    cu.iso_code as currency,
+                    FORMAT(o.conversion_rate, 2) AS rate 
+            FROM prstshp_order_detail AS od
+            INNER JOIN prstshp_orders AS o ON (o.id_order = od.id_order)
+            INNER JOIN prstshp_order_state_lang osl ON (osl.id_order_state = o.current_state AND osl.id_lang = 1  ) 
+            INNER JOIN prstshp_customer c ON (c.id_customer = o.id_customer) 
+            INNER JOIN prstshp_address a ON (a.id_address = o.id_address_delivery) 
+            LEFT JOIN prstshp_order_history AS oh ON (oh.id_order = o.id_order AND oh.id_order_state = 2)
+            INNER JOIN prstshp_supplier AS s ON (s.id_supplier = od.product_supplier_reference AND od.product_supplier_reference = "'.$provider.'" )
+            LEFT JOIN prstshp_currency AS cu ON (cu.id_currency = o.id_currency)
+            LEFT JOIN
+                (SELECT GROUP_CONCAT(prstshp_carrier.name) as carrier_name, id_order FROM prstshp_carrier INNER JOIN prstshp_orders ON (prstshp_carrier.id_carrier = prstshp_orders.id_carrier) GROUP BY prstshp_orders.id_order) AS carriers
+                ON (carriers.id_order = o.id_order)
+            WHERE o.current_state in (2,3,4,5)  AND YEAR(o.date_add) = "'.$year.'" AND MONTH(o.date_add) = "'.$month.'"
+            GROUP BY o.id_order';
+        return Db::getInstance()->executeS($query);
+    }
+
+    /**
+     * Print Conciliation
+     */
+    public function excelConciliation ($orders) {
+        $timestamp = time();
+        $filename = 'Export_' . $timestamp . '.xls';
+        
+        header('Content-type: application/vnd.ms-excel;charset=iso-8859-15');
+        header("Content-Disposition: attachment; filename=$filename");
+        
+        echo implode("\t", array_values($this->translateKeys())) . "\n";
+
+        foreach ($orders as $row) {
+            echo implode("\t", array_values($row)) . "\n";
+        }        
+        exit();
+    }
+
+    /**
+     * Get suppliers
+     */
+    public function getSuppliers() {
+        $result = [];
+        $suppliers = new Collection('ProductSupplier');
+        $suppliers->groupBy('id_supplier');
+        
+        foreach($suppliers as $supplier) {
+            $result[] = new Supplier($supplier->id_supplier, $this->context->language->id);
+        }
+        return $result;
+    }
+
+    /**
+     * Translate excel column titles
+     */
+    private function translateKeys() {
+       return  
+       ['reference' => 'Referencia',
+        'state_name' => 'Estado',
+        'payment' => 'Método de pago',
+        'client' => 'Cliente',
+        'destiny' => 'Destinatario',
+        'created_at' => 'Creado el',
+        'aproved' => 'Aprobado el',
+        'paid' => 'Total pagado',
+        'supplier_name' => 'Proveedor',
+        'supplier_total' => 'Total Proveedor',
+        'carrier_name' => 'Transportista',
+        'shipping' => 'Total Transportación',
+        'embalaje' => 'Embalaje',
+        'gain' => 'Utilidad',
+        'currency' => 'Moneda',
+        'rate' => 'Cambio'];
+    }
+
 }
