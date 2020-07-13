@@ -141,15 +141,31 @@ class MallHabanaService {
      * Print Conciliation
      */
     public function excelConciliation ($orders) {
+        
         $timestamp = time();
         $filename = 'Export_' . $timestamp . '.xls';
         
         header('Content-type: application/vnd.ms-excel;charset=iso-8859-15');
         header("Content-Disposition: attachment; filename=$filename");
         
-        echo implode("\t", array_values($this->translateKeys())) . "\n";
+        echo implode("\t", array_values()) . "\n";
 
         foreach ($orders as $row) {
+            echo implode("\t", array_values($row)) . "\n";
+        }        
+        exit();
+    }
+
+    public function excel ($headers, $values) {
+        $timestamp = time();
+        $filename = 'Export_' . $timestamp . '.xls';
+        
+        header('Content-type: application/vnd.ms-excel;charset=iso-8859-15');
+        header("Content-Disposition: attachment; filename=$filename");
+        
+        echo implode("\t", array_values($headers)) . "\n";
+
+        foreach ($values as $row) {
             echo implode("\t", array_values($row)) . "\n";
         }        
         exit();
@@ -170,9 +186,9 @@ class MallHabanaService {
     }
 
     /**
-     * Translate excel column titles
+     * Conciliation column titles
      */
-    private function translateKeys() {
+    public function conciliationHeaders() {
        return  
        ['reference' => 'Referencia',
         'state_name' => 'Estado',
@@ -191,5 +207,44 @@ class MallHabanaService {
         'currency' => 'Moneda',
         'rate' => 'Cambio'];
     }
+
+    /**
+     * get orders by provider and date
+     */
+    public function ordersBySate($state) {
+        $query = 'SELECT o.reference as reference, 
+                    o.date_add as created_at,
+                    cu.iso_code as currency,
+                    FORMAT(o.total_paid,2) AS paid,
+                    carriers.carrier_name,
+                    CONCAT (c.firstname, " ", c.lastname) as client,
+                    CONCAT (a.firstname, " ", a.lastname) as destiny
+            FROM prstshp_order_detail AS od
+            INNER JOIN prstshp_orders AS o ON (o.id_order = od.id_order)
+            LEFT JOIN prstshp_customer c ON (c.id_customer = o.id_customer) 
+            LEFT JOIN prstshp_address a ON (a.id_address = o.id_address_delivery) 
+            LEFT JOIN prstshp_supplier AS s ON (s.id_supplier = od.product_supplier_reference)
+            LEFT JOIN prstshp_currency AS cu ON (cu.id_currency = o.id_currency)
+            LEFT JOIN
+                (SELECT GROUP_CONCAT(prstshp_carrier.name) as carrier_name, id_order FROM prstshp_carrier INNER JOIN prstshp_orders ON (prstshp_carrier.id_carrier = prstshp_orders.id_carrier) GROUP BY prstshp_orders.id_order) AS carriers
+                ON (carriers.id_order = o.id_order)
+            WHERE o.current_state in ('.implode(',',$state).')
+            GROUP BY o.id_order';
+        return Db::getInstance()->executeS($query);
+    }
+
+    /**
+     * Pending column titles
+     */
+    public function pendingHeaders() {
+        return  
+        ['reference' => 'Referencia',
+        'created_at' => 'Creado el',
+        'currency' => 'Moneda',
+        'paid' => 'Total pagado',
+        'carrier_name' => 'Transportista',
+        'client' => 'Cliente',
+        'destiny' => 'Destinatario'];
+     }
 
 }

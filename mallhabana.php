@@ -301,6 +301,23 @@ class Mallhabana extends Module {
             $tab->module = $this->name;
             $tab->add();
         }
+        
+        if (!(int) Tab::getIdFromClassName('AdminMallhabanaPending')) {
+            $parentTabID = Tab::getIdFromClassName('AdminMallhabana');
+            $parentTab = new Tab($parentTabID);
+
+            $tab = new Tab();
+            $tab->active = 1;
+            $tab->class_name = "AdminMallhabanaPending";
+            $tab->name = array();
+            foreach ($languages as $language) {
+                $tab->name[$language['id_lang']] = $this->l('Pendientes confirmación');
+            }
+            $tab->id_parent = $parentTab->id;
+            $tab->icon = 'save';
+            $tab->module = $this->name;
+            $tab->add();
+        }
     }
 
     public function enable($force_all = false) {

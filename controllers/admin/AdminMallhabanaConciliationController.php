@@ -38,7 +38,8 @@ class AdminMallhabanaConciliationController extends ModuleAdminController {
                 $provider = Tools::getValue('provider');
                 $year = (int)Tools::getValue('year');
                 $orders = $this->service->ordersByProviderAndDate($month, $year, $provider);
-                $this->service->excelConciliation($orders);
+                $headers = $this->service->conciliationHeaders();
+                $this->service->excel($headers, $orders);
                 
             } catch (PrestaShopException $e) {
                 $this->errors[] = $e->getMessage();
