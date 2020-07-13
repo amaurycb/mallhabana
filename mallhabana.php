@@ -280,7 +280,7 @@ class Mallhabana extends Module {
                 $tab->name[$language['id_lang']] = $this->l('Despacho');
             }
             $tab->id_parent = $parentTab->id;
-            $tab->icon = 'list';
+            $tab->icon = 'receipt';
             $tab->module = $this->name;
             $tab->add();
         }
@@ -297,7 +297,7 @@ class Mallhabana extends Module {
                 $tab->name[$language['id_lang']] = $this->l('Conciliación');
             }
             $tab->id_parent = $parentTab->id;
-            $tab->icon = 'list';
+            $tab->icon = 'assessment';
             $tab->module = $this->name;
             $tab->add();
         }
@@ -314,7 +314,7 @@ class Mallhabana extends Module {
                 $tab->name[$language['id_lang']] = $this->l('Pendientes confirmación');
             }
             $tab->id_parent = $parentTab->id;
-            $tab->icon = 'save';
+            $tab->icon = 'get_app';
             $tab->module = $this->name;
             $tab->add();
         }

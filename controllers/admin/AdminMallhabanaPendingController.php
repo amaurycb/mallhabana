@@ -20,7 +20,7 @@ class AdminMallhabanaPendingController extends ModuleAdminController {
         $orders = $this->service->ordersBySate([4]);        
         $headers = $this->service->pendingHeaders();
         $this->service->excel($headers, $orders);
-    } 
+    }
 
 
 }
