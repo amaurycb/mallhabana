@@ -9,9 +9,9 @@
 				<label class="control-label col-lg-3 required">Proveedor</label>
 				<div class="col-lg-9">
 					<select name="provider">
-					{foreach $suppliers as $supplier}
-
-						<option value="{$supplier->id_supplier}">{$supplier->name}</option>
+						<option value="0">Todos los Proveedores</option>
+						{foreach $suppliers as $supplier}
+							<option value="{$supplier->id_supplier}">{$supplier->name}</option>
 						{/foreach}
 					</select>
 				</div>
