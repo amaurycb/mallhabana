@@ -228,7 +228,7 @@ class MallHabanaService {
                     carriers.carrier_name,
                     FORMAT(o.total_shipping, 2) as shipping,
                     "Pendiente" as embalaje,
-                    "Pendiente" as gain,
+                    FORMAT(o.total_paid - SUM(od.total_price_tax_excl) - o.total_shipping, 2) as gain,
                     cu.iso_code as currency,
                     FORMAT(o.conversion_rate, 2) AS rate 
             FROM prstshp_order_detail AS od
@@ -244,7 +244,7 @@ class MallHabanaService {
                 ON (carriers.id_order = o.id_order)
             WHERE o.current_state in (2,3,4,5)  AND YEAR(o.date_add) = "'.$year.'" AND MONTH(o.date_add) = "'.$month.'"
             GROUP BY o.id_order';
-        
+
         $result = [];
         $orders = Db::getInstance()->executeS($query);
         $suppliersFull = $this->getSuppliers($supplierId);
