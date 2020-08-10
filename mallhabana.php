@@ -46,11 +46,16 @@ class Mallhabana extends Module {
             $this->registerHook('filterProductSearch') &&
             $this->registerHook('actionOrderStatusPostUpdate') &&
             $this->registerHook('displayPDFInvoice') &&            
-            $this->registerHook('displayPDFDeliverySlip') &&            
+            $this->registerHook('displayPDFDeliverySlip') &&              
+            $this->registerHook('displayAdminOrder') &&
+            $this->registerHook('actionAdminOrdersListingFieldsModifier') &&
+            $this->registerHook('displayorderConfirmation') &&
+            $this->registerHook('actionPaymentConfirmation') &&
             Configuration::updateValue('MALLHABANA', 'Funciones complementarias para MallHabana.com');
     }
 
-    public function uninstall() {     
+    public function uninstall() { 
+        // rmdir( _PS_ROOT_DIR_."/img/codes", 777);   
         Configuration::deleteByName('NO_STOCK_REDIRECTION');
         Configuration::deleteByName('NO_STOCK_MESSAGE');
         Configuration::deleteByName('SITE_URL'); 
@@ -188,7 +193,7 @@ class Mallhabana extends Module {
             return '<br/><a class="title_font print_product ml-0" href="javascript:void();"><i class="zmdi zmdi-bus"></i>DISPONIBLE PARA:</a>'.$this->service->getDestinyInfo((int)Tools::getValue('id_product'));
 
         } catch (Exception $e) {
-           $this->logger->logDebug($e->getMessage()); 
+           //$this->logger->logDebug($e->getMessage()); 
             return false;
         }         
     }
@@ -197,16 +202,6 @@ class Mallhabana extends Module {
      * Filter proucto search. The idea is only show in stock productos on search result.
      */
     public function hookFilterProductSearch($params) {
-        $products = $params['searchVariables']['products'];
-        $filter = [];
-
-        foreach($products as $product) {
-            if ((int) $product['quantity'] > 0) {
-                $filter[] = $product;
-            }
-        }
-
-        $params['searchVariables']['products'] = $filter;
         return $params['searchVariables'];        
     }
     
@@ -337,6 +332,23 @@ class Mallhabana extends Module {
         }
         $tab = new Tab($tabId);
         return $tab->delete();
+    }
+
+    public function hookActionAdminOrdersListingFieldsModifier($params) {
+        $params['fields']['total_shipping'] = array(
+            'title' => $this->l('Transportación'),
+            'align' => 'center',
+        );     
+        unset($params['fields']['new']);
+        unset($params['fields']['pdf']);
+    }
+
+    public function hookDisplayOrderConfirmation ($params) {      
+        // $this->service->updateOrderOwner($params['order']->id);       
+    }
+
+    public function hookActionPaymentConfirmation($params) {
+        $this->service->updateOrderOwner($params['id_order']);
     }
    
 }

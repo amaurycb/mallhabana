@@ -1,0 +1,4 @@
+Buenos días {employee},
+En el pedido {order_reference} ha sido.
+
+{shop_url}

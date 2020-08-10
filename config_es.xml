@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <module>
-    <name>cubacel</name>
-    <displayName><![CDATA[Recargas Cubacel]]></displayName>
+    <name>mallhabana</name>
+    <displayName><![CDATA[MallHabana]]></displayName>
     <version><![CDATA[1.0.0]]></version>
-    <description><![CDATA[Recargas de m&oacute;viles e internet. Compa&ntilde;&iacute;a Cubacel.]]></description>
+    <description><![CDATA[Funciones complementarias para MallHabana.com]]></description>
     <author><![CDATA[Yolanda Mauri P&eacute;rez]]></author>
     <tab><![CDATA[administration]]></tab>
 	<confirmUninstall><![CDATA[¿Está seguro de que desea instalar el módulo?]]></confirmUninstall>

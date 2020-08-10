@@ -54,15 +54,18 @@ class MallHabanaService {
     public function getDestinyInfo($idProduct){
         $carriers = (Db::getInstance())->executeS((new DbQuery())
         ->from('product_carrier', 'pc')
-        ->innerJoin('carrier', 'c', 'c.id_carrier=pc.id_carrier')
+        ->innerJoin('carrier', 'c', 'c.id_reference = pc.id_carrier_reference')
         ->where("c.active = 1")
-        ->where("pc.id_product = '$idProduct'"));
-
-        if (count($carriers) > 0) {
+        ->where("c.deleted = 0")
+        ->where("pc.id_product = ".(int)$idProduct));
+        
+        if (count($carriers) == 0) {
              $carriers = (Db::getInstance())->executeS((new DbQuery())
             ->from('carrier', 'c')
-            ->where("c.active = 1"));
+            ->where("c.active = 1")        
+            ->where("c.deleted = 0"));
         }
+
         $destiniesAvalilable = $this->getZoneByCarrier($carriers);
         return implode(', ', $destiniesAvalilable);
     }
@@ -72,8 +75,10 @@ class MallHabanaService {
         foreach ($carriers as $carrier) {           
             $zonesAvailables = (Db::getInstance())->executeS((new DbQuery())
                             ->from('carrier_zone', 'cz')
-                            ->innerJoin('zone', 'cf', 'cf.id_zone=cz.id_zone')
-                            ->where('cz.id_carrier = ' . $carrier['id_carrier']));
+                            ->innerJoin('zone', 'z', 'z.id_zone=cz.id_zone')
+                            ->where('cz.id_carrier = ' . (int)$carrier['id_carrier'])
+                            ->where("z.active = 1"));
+
             if (count($zonesAvailables) > 0) {
                 foreach ($zonesAvailables as $zone) {
                     $zones[] = $zone['name'];
@@ -272,6 +277,90 @@ class MallHabanaService {
             WHERE od.id_order = '.$idOrder.'  GROUP BY s.id_supplier';
         $data = Db::getInstance()->executeS($query);
         return !empty($data[0]['supplier_total']) ? $data[0]['supplier_total'] : '0.00';
+    }
+
+    public function getOrderByCartId ($id_cart) {
+        $query = 'SELECT id_order
+                FROM prstshp_orders AS o
+                WHERE o.id_cart = '.$id_cart;
+        return Db::getInstance()->executeS($query);
+    }
+
+    public function updateOrderOwner($orderId) {
+        Db::getInstance()->execute('DELETE FROM prstshp_order_owner WHERE id_order = '.(int)$orderId);
+        Db::getInstance()->execute('UPDATE prstshp_orders SET owners = "" WHERE id_order = '.(int)$orderId);
+
+        $ownersIds = Db::getInstance()->executeS('SELECT DISTINCT po.id_owner, po.id_product, od.product_quantity  FROM prstshp_product_owner po
+                        INNER JOIN prstshp_order_detail od ON od.product_id = po.id_product
+                        WHERE od.id_order = '.(int)$orderId);
+        $ownerNames = [];
+        $inserted = [];
+        $order = new Order($orderId);
+        foreach ($ownersIds as $ownerId) {
+            $employee = new Employee((int)$ownerId['id_owner']);
+            if(!in_array($ownerId['id_owner'], array_keys($inserted))) {                
+                Db::getInstance()->execute('INSERT INTO prstshp_order_owner (id_order, id_owner) VALUES ('.(int)$orderId.', '.(int)$ownerId['id_owner'].')');
+                $ownerNames[] = $employee->firstname.' '.$employee->lastname;
+                $inserted[$ownerId['id_owner']] = ['id_product' => $ownerId['id_product'], 'qty' => $ownerId['product_quantity']];
+            }
+        }
+
+        // if(count(array_unique($ownerNames)) > 0) {
+            $owners = implode(", ", array_unique($ownerNames));
+            Db::getInstance()->execute('UPDATE prstshp_orders SET owners = "'.$owners.'" WHERE id_order = '.(int)$orderId);
+        // }
+        
+        foreach($inserted as $keyI => $valueI){
+            $employee = new Employee((int)$keyI);
+            $product_list = array();
+            foreach ($order->getProducts() as $product) {
+                if((int)$product['product_id'] == (int)$valueI['id_product']) {
+
+                    $htmlProduct = '<tr style="text-align: center;">
+                                        <td style="width:25%">
+                                            <font size="2" face="Open-sans, sans-serif" color="#555454">
+                                                '.$product['reference'].'
+                                            </font>
+                                        </td>
+                                        <td style="width:75%">
+                                            <font size="2" face="Open-sans, sans-serif" color="#555454">
+                                                <strong>'.$product['product_name'].' (Cantidad: '. (int)$valueI['qty'].')</strong>
+                                            </font>
+                                        </td>
+                                    </tr>';
+                    $product_list[] = $htmlProduct;
+                }
+            }
+            $product_list_html = '';
+            if (count($product_list) > 0)
+                $product_list_html = '<table style="width:100%"><tr><th style="width:25%;border-bottom:1px solid #d6d4d4;">Referencia</th><th style="width:75%;border-bottom:1px solid #d6d4d4;">Productos</th></tr>'.implode('', $product_list).'</table>';
+            $mailParams = array(
+                '{products}' => $product_list_html,
+                '{employee}' => $employee->firstname.' '.$employee->lastname,
+                '{customer_name}' => ' ',
+                '{customer_mail}' => "",
+                '{order_reference}' => $order->reference
+            );
+            if($product_list_html != '')
+                Mail::Send(
+                    (int)$order->id_lang,
+                    'employees_order',
+                    sprintf(Mail::l('MallHabana. Productos de la orden %s', (int)$order->id_lang), $order->reference),
+                    $mailParams,
+                    $employee->email,
+                    $employee->firstname.' '.$employee->lastname,
+                    null, null, null, null, dirname(__FILE__).'/views/mails/', false, (int)$order->id_shop
+            );
+        }
+
+    }
+
+    public function getProductOwnerByOwner ($id_owner) {
+        $query = 'SELECT p.*
+                FROM prstshp_product_owner AS po
+                INNER JOIN prstshp_product p ON p.id_product = po.id_product
+                WHERE po.id_owner = '.$id_owner;
+        return Db::getInstance()->executeS($query);
     }
 
 }
