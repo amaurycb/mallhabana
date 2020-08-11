@@ -35,9 +35,9 @@ class Mallhabana extends Module {
             Shop::setContext(Shop::CONTEXT_ALL);
         }
     
-        mkdir( _PS_ROOT_DIR_."/img/codes", 777);
-        mkdir( _PS_ROOT_DIR_."/img/codes/qr", 777);
-        mkdir( _PS_ROOT_DIR_."/img/codes/barcode", 777);
+        // mkdir( _PS_ROOT_DIR_."/img/codes", 777);
+        // mkdir( _PS_ROOT_DIR_."/img/codes/qr", 777);
+        // mkdir( _PS_ROOT_DIR_."/img/codes/barcode", 777);
 
         return parent::install() &&
             $this->registerHook('header') &&
@@ -296,6 +296,23 @@ class Mallhabana extends Module {
             $tab->module = $this->name;
             $tab->add();
         }
+
+        if (!(int) Tab::getIdFromClassName('AdminMallhabanaDespacho')) {
+            $parentTabID = Tab::getIdFromClassName('AdminMallhabana');
+            $parentTab = new Tab($parentTabID);
+
+            $tab = new Tab();
+            $tab->active = 1;
+            $tab->class_name = "AdminMallhabanaDespacho";
+            $tab->name = array();
+            foreach ($languages as $language) {
+                $tab->name[$language['id_lang']] = $this->l('Despacho Por Proveedor');
+            }
+            $tab->id_parent = $parentTab->id;
+            $tab->icon = 'assessment';
+            $tab->module = $this->name;
+            $tab->add();
+        }
         
         if (!(int) Tab::getIdFromClassName('AdminMallhabanaPending')) {
             $parentTabID = Tab::getIdFromClassName('AdminMallhabana');
@@ -341,6 +358,8 @@ class Mallhabana extends Module {
         );     
         unset($params['fields']['new']);
         unset($params['fields']['pdf']);
+        unset($params['fields']['owners']);
+        
     }
 
     public function hookDisplayOrderConfirmation ($params) {      
