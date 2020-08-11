@@ -13,12 +13,19 @@ class AdminMallhabanaSupplyController extends ModuleAdminController {
         $this->statuses = [];
         $statuses = OrderState::getOrderStates((int) $this->context->language->id);
         foreach ($statuses as $status) {
-            if (in_array($status['id_order_state'], [3,4])) {
+            if (in_array($status['id_order_state'], [2,3,4,20])) {
                 $this->statuses[$status['name']] = $status['name'];
             }
         }
 
-        $this->_select = 'c.name as carrier_name, osl.name as state_name, os.color';
+        // Get suppliers
+        $this->carriers = [];
+        $carriers = Db::getInstance()->executeS('SELECT id_carrier, name FROM '._DB_PREFIX_.'carrier group by id_reference');
+        foreach($carriers as $carrier) {
+            $this->carriers[$carrier['id_carrier']] =  $carrier['name'];
+        }
+       
+        $this->_select = ' a.id_carrier, c.name as carrier_name, osl.name as state_name, os.color, a.date_add as dated';
         $this->_join = '
           JOIN '._DB_PREFIX_.'carrier c ON (c.id_carrier = a.id_carrier)
           LEFT JOIN '._DB_PREFIX_.'order_state os ON (os.id_order_state = a.current_state)
@@ -26,7 +33,7 @@ class AdminMallhabanaSupplyController extends ModuleAdminController {
         ';
 
         //Filter list by order status
-        $this->_where = 'AND a.current_state IN (3,4) ';
+        $this->_where = 'AND a.current_state IN (2,3,4,20) GROUP BY a.id_order';
      
         $this->bootstrap = true; 
         $this->table = Order::$definition['table'];
@@ -43,29 +50,30 @@ class AdminMallhabanaSupplyController extends ModuleAdminController {
                 'align' => 'text-center',
                 'class' => 'fixed-width-xs',
             ),
-            'reference' => array(
-                'title' => $this->module->l('Order'),
-                'align' => 'text-center',
-                // 'class' => 'fixed-width-lg'
-            ),
-            'date_add' => array(
+            'dated' => array(
                 'title' => $this->module->l('Fecha de la Orden'),
                 'align' => 'text-center',
-                'type'=>'datetime',
+                'type'=>'datetime',   
                 'class' => 'fixed-width-xs'
             ),            
             'carrier_name' => array(
                 'title' => $this->module->l('Transportista'),
                 'align' => 'text-center',
                 'havingFilter' => true,
-                'class' => 'fixed-width-lg'
+                'class' => 'fixed-width-lg',
+                'type' => 'select',
+                'class' => 'fixed-width-lg',
+                'list' => $this->carriers,
+                'filter_key' => 'id_carrier',
+                'filter_type' => 'number',
+                'order_key' => 'id_carrier'
             ),
             'total_shipping' => array(
                 'title' => $this->module->l('Costo de transportación'),
-                'align' => 'text-right',
+                'align' => 'text-center',
                 'type' => 'price',
                 'class' => 'fixed-width-xs'
-            ),        
+            ),     
             'state_name' => array(
                 'title' => $this->module->l('Estado'),
                 'align' => 'text-center',
@@ -83,7 +91,7 @@ class AdminMallhabanaSupplyController extends ModuleAdminController {
             'printDeliveryNotes' => [
               'text' => 'Imprimir',
               'icon' => 'icon-print'
-            ],
+            ]
           ];
     }
 
