@@ -35,7 +35,7 @@ class AdminMallhabanaConciliationController extends ModuleAdminController {
         if (Tools::isSubmit('submitConciliation')){
             try {
                 $month = Tools::getValue('month');
-                $provider = Tools::getValue('provider');
+                $provider = (int) Tools::getValue('provider');
                 $year = (int)Tools::getValue('year');
                 $data = $this->service->ordersAllProvidersByDate($month, $year, $provider);
                 $orders = $data['orders'];
