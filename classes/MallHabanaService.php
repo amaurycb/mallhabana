@@ -149,12 +149,20 @@ class MallHabanaService {
         $suppliers->groupBy('id_supplier');
         if (empty($idSupplier)) {            
             foreach($suppliers as $supplier) {
-                $result[] = new Supplier($supplier->id_supplier, $this->context->language->id);
+                $result[] = new Supplier($supplier->id_supplier, 1);
             }
         } else {
-            $result[] = new Supplier($idSupplier, $this->context->language->id);
+            $result[] = new Supplier($idSupplier, 1);
         }
         return $result;
+    }
+
+    /**
+     * Get carrier
+     */
+    public function getCarriers($idSupplier = null) {
+        $result = [];
+        return Db::getInstance()->executeS('SELECT c.id_carrier, c.name FROM '._DB_PREFIX_.'carrier c group by c.id_reference');
     }
 
     /**
@@ -162,7 +170,7 @@ class MallHabanaService {
      */
     public function conciliationHeaders() {
        return  
-       ['reference' => 'Referencia',
+       ['id_order' => 'Id Order',
         'state_name' => 'Estado',
         'payment' => 'Método de pago',
         'client' => 'Cliente',
@@ -208,7 +216,7 @@ class MallHabanaService {
      */
     public function pendingHeaders() {
         return  
-        ['reference' => 'Referencia',
+        ['id_order' => 'Id Orden',
         'created_at' => 'Creado el',
         'currency' => 'Moneda',
         'paid' => 'Total pagado',
@@ -220,9 +228,9 @@ class MallHabanaService {
      /**
      * get orders by provider and date
      */
-    public function ordersAllProvidersByDate($month, $year, $supplierId = 0) {
-        $supplierCondition = !empty($supplierCondition) ? " AND s.id_supplier = $supplierId" : "";
-        $query = 'SELECT o.reference as reference, 
+    public function ordersAllProvidersByDate($month, $year, int $supplierId = null) {
+        $supplierCondition = !empty($supplierId) ? " AND s.id_supplier = $supplierId" : "";
+        $query = 'SELECT o.id_order as id_order, 
                     osl.name as state_name,
                     o.payment,
                     CONCAT (c.firstname, " ", c.lastname) as client,
@@ -243,11 +251,12 @@ class MallHabanaService {
             INNER JOIN prstshp_address a ON (a.id_address = o.id_address_delivery) 
             LEFT JOIN prstshp_order_history AS oh ON (oh.id_order = o.id_order AND oh.id_order_state = 2)
             LEFT JOIN prstshp_currency AS cu ON (cu.id_currency = o.id_currency)
-            LEFT JOIN prstshp_supplier AS s ON (s.id_supplier = od.product_supplier_reference '.$supplierCondition.')
+            LEFT JOIN prstshp_product AS p ON (p.id_product = od.product_id)
+            LEFT JOIN prstshp_supplier AS s ON (s.id_supplier = p.id_supplier)
             LEFT JOIN
                 (SELECT GROUP_CONCAT(prstshp_carrier.name) as carrier_name, id_order FROM prstshp_carrier INNER JOIN prstshp_orders ON (prstshp_carrier.id_carrier = prstshp_orders.id_carrier) GROUP BY prstshp_orders.id_order) AS carriers
                 ON (carriers.id_order = o.id_order)
-            WHERE o.current_state in (2,3,4,5)  AND YEAR(o.date_add) = "'.$year.'" AND MONTH(o.date_add) = "'.$month.'"
+            WHERE o.current_state in (2,3,4,5)  AND YEAR(o.date_add) = "'.$year.'" AND MONTH(o.date_add) = "'.$month.'"'.$supplierCondition.'
             GROUP BY o.id_order';
 
         $result = [];
@@ -256,7 +265,7 @@ class MallHabanaService {
         $headers = $this->conciliationHeaders();
 
         foreach ($orders as $order) {
-            $idOrder = explode('-',$order['reference']);
+            $idOrder = $order['id_order'];
             foreach ($suppliersFull as $key => $supplier) {
                 $order = array_merge(array_slice($order, 0, 8), [
                     'supplier_total'.$key  => $this->getOrderTotalBySupplier($idOrder[0], $supplier->id_supplier)
@@ -273,7 +282,8 @@ class MallHabanaService {
                     FORMAT(SUM(od.product_price * od.product_quantity),2) as supplier_total
             FROM prstshp_order_detail AS od
             INNER JOIN prstshp_orders AS o ON (o.id_order = od.id_order) 
-            INNER JOIN prstshp_supplier AS s ON (s.id_supplier = od.product_supplier_reference AND s.id_supplier = '.$idSupplier.')
+            INNER JOIN prstshp_product AS p ON (p.id_product = od.product_id)
+            INNER JOIN prstshp_supplier AS s ON (s.id_supplier = p.id_supplier AND s.id_supplier = '.$idSupplier.')
             WHERE od.id_order = '.$idOrder.'  GROUP BY s.id_supplier';
         $data = Db::getInstance()->executeS($query);
         return !empty($data[0]['supplier_total']) ? $data[0]['supplier_total'] : '0.00';
@@ -339,7 +349,7 @@ class MallHabanaService {
                 '{employee}' => $employee->firstname.' '.$employee->lastname,
                 '{customer_name}' => ' ',
                 '{customer_mail}' => "",
-                '{order_reference}' => $order->reference
+                '{order_reference}' => $order->id_order
             );
             if($product_list_html != '')
                 Mail::Send(
@@ -361,6 +371,45 @@ class MallHabanaService {
                 INNER JOIN prstshp_product p ON p.id_product = po.id_product
                 WHERE po.id_owner = '.$id_owner;
         return Db::getInstance()->executeS($query);
+    }
+
+    public function getOrdersByProviders ($supplier, $date) {
+        $data = Db::getInstance()->executeS('
+        SELECT p.quantity as available, SUM(a.product_quantity) AS qty, GROUP_CONCAT(CONCAT(a.id_order,"(", a.product_quantity, ")")) as orders, a.product_quantity_in_stock, a.product_id, a.product_name, a.product_reference  
+        FROM '._DB_PREFIX_.'order_detail a
+        inner JOIN '._DB_PREFIX_.'orders o ON (o.id_order = a.id_order)
+        inner JOIN '._DB_PREFIX_.'product p ON (p.id_product = a.product_id)
+        inner JOIN '._DB_PREFIX_.'order_state os ON (os.id_order_state = o.current_state) 
+        WHERE os.id_order_state IN (2,3,4,5) AND p.id_supplier = '.(int)$supplier.' 
+        AND DATE(o.date_add) = "'.$date.'" GROUP BY a.product_id ORDER BY a.product_id');
+
+        if (count(array_keys($data)) > 0 && array_keys($data)[0] == 'available') {
+            // $data = [$data];
+            return [$data];
+        }
+        // $result = [];
+        // foreach ($data as $item) {
+        //     $product = new Product($item[0]['product_id'],1);
+        //     $result[] = [array_merge($item[0], ['available' => $product->quantity])];
+        // } 
+        return $data;
+    }
+
+    public function getOrdersByProvidersIDs ($supplier, $date) {        
+        $data = Db::getInstance()->executeS('
+        SELECT DISTINCT a.id_order 
+        FROM '._DB_PREFIX_.'order_detail a
+        inner JOIN '._DB_PREFIX_.'orders o ON (o.id_order = a.id_order)
+        inner JOIN '._DB_PREFIX_.'product p ON (p.id_product = a.product_id)
+        inner JOIN '._DB_PREFIX_.'order_state os ON (os.id_order_state = o.current_state) 
+        WHERE os.id_order_state IN (2,3,4,5) AND p.id_supplier = '.(int)$supplier.' 
+        AND DATE(o.date_add) = "'.$date.'"');
+        
+        $result = [];
+        foreach ($data as $item) {            
+            $result[] = $item['id_order'];
+        } 
+        return $result;      
     }
 
 }

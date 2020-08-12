@@ -25,7 +25,7 @@ class AdminMallhabanaSupplyController extends ModuleAdminController {
             $this->carriers[$carrier['id_carrier']] =  $carrier['name'];
         }
        
-        $this->_select = ' a.id_carrier, c.name as carrier_name, osl.name as state_name, os.color, a.date_add as dated';
+        $this->_select = ' a.id_carrier, c.name as carrier_name, osl.name as state_name, os.color, DATE(a.date_add) as dated';
         $this->_join = '
           JOIN '._DB_PREFIX_.'carrier c ON (c.id_carrier = a.id_carrier)
           LEFT JOIN '._DB_PREFIX_.'order_state os ON (os.id_order_state = a.current_state)
@@ -54,7 +54,7 @@ class AdminMallhabanaSupplyController extends ModuleAdminController {
                 'title' => $this->module->l('Fecha de la Orden'),
                 'align' => 'text-center',
                 'type'=>'datetime',   
-                'class' => 'fixed-width-xs'
+                'class' => 'fixed-width-md'
             ),            
             'carrier_name' => array(
                 'title' => $this->module->l('Transportista'),
@@ -159,11 +159,10 @@ class AdminMallhabanaSupplyController extends ModuleAdminController {
      * Print individual orders
      */
     public function postProcess() {
-        parent::postProcess();
         if (Tools::getValue('action') == 'printOrder'){
             try {
-                $idOrder = (int)Tools::getValue($this->identifier);
-                $orders = Tools::isSubmit('submitBulkprintDeliveryNotesorders') ? $_POST['ordersBox'] : ($idOrder > 0 ? [$idOrder] : []);
+                $idOrder = (int)Tools::getValue('id_order');
+                $orders = Tools::isSubmit('submitBulkprintDeliveryNotesorders') && !empty($_POST['ordersBox']) ? $_POST['ordersBox'] : $idOrder;
                 if( count($orders) > 0) {
                     $this->updateStatus($orders);
                     return $this->renderPdf($orders);
@@ -172,6 +171,8 @@ class AdminMallhabanaSupplyController extends ModuleAdminController {
                 $this->errors[] = $e->getMessage();
             }
         }      
+        parent::postProcess();
+
     }
 
     /**
