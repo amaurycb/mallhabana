@@ -45,20 +45,23 @@ class Mallhabana extends Module {
             $this->registerHook('displayLeftColumnProduct') &&
             $this->registerHook('filterProductSearch') &&
             $this->registerHook('actionOrderStatusPostUpdate') &&
-            $this->registerHook('displayPDFInvoice') &&            
+            $this->registerHook('displayPDFInvoice') &&    
+            $this->registerHook('displayPDFSupplyOrder') &&      
             $this->registerHook('displayPDFDeliverySlip') &&              
-            $this->registerHook('displayAdminOrder') &&
+            $this->registerHook('displayAdminOrder') &&                        
+            $this->registerHook('displayPDFSupplyOrderForm') &&
             $this->registerHook('actionAdminOrdersListingFieldsModifier') &&
-            $this->registerHook('displayorderConfirmation') &&
+            $this->registerHook('displayorderConfirmation') &&            
+            $this->registerHook('HookDisplayBackOfficeHeader') &&
             $this->registerHook('actionPaymentConfirmation') &&
             Configuration::updateValue('MALLHABANA', 'Funciones complementarias para MallHabana.com');
     }
 
     public function uninstall() { 
         // rmdir( _PS_ROOT_DIR_."/img/codes", 777);   
-        Configuration::deleteByName('NO_STOCK_REDIRECTION');
-        Configuration::deleteByName('NO_STOCK_MESSAGE');
-        Configuration::deleteByName('SITE_URL'); 
+        // Configuration::deleteByName('NO_STOCK_REDIRECTION');
+        // Configuration::deleteByName('NO_STOCK_MESSAGE');
+        // Configuration::deleteByName('SITE_URL'); 
         return !(!parent::uninstall() || !Configuration::deleteByName('MALLHABANA')) ;
     }
 
@@ -226,6 +229,22 @@ class Mallhabana extends Module {
     }
 
     /**
+     * Display Qr and Barcode on invoice PDF
+     */
+    public function hookDisplayPDFOrderSlip($params) {
+        $idOrder = $params['object']->id_order;
+        return $this->getSmartyVariablesPDF($idOrder);
+    }
+
+    /**
+     * Display Qr and Barcode on invoice PDF
+     */
+    public function hookDisplayPDFSupplyOrderForm($params) {
+        $idOrder = $params['object']->id_order;
+        return $this->getSmartyVariablesPDF($idOrder);
+    }
+
+    /**
      * Display Qr and Barcode on delivery PDF
      */
     public function hookDisplayPDFDeliverySlip($params) {
@@ -313,6 +332,23 @@ class Mallhabana extends Module {
             $tab->module = $this->name;
             $tab->add();
         }
+
+        if (!(int) Tab::getIdFromClassName('AdminMallhabanaDespachoCarrier')) {
+            $parentTabID = Tab::getIdFromClassName('AdminMallhabana');
+            $parentTab = new Tab($parentTabID);
+
+            $tab = new Tab();
+            $tab->active = 1;
+            $tab->class_name = "AdminMallhabanaDespachoCarrier";
+            $tab->name = array();
+            foreach ($languages as $language) {
+                $tab->name[$language['id_lang']] = $this->l('Despacho Por Transportista');
+            }
+            $tab->id_parent = $parentTab->id;
+            $tab->icon = 'assessment';
+            $tab->module = $this->name;
+            $tab->add();
+        }
         
         if (!(int) Tab::getIdFromClassName('AdminMallhabanaPending')) {
             $parentTabID = Tab::getIdFromClassName('AdminMallhabana');
@@ -359,7 +395,7 @@ class Mallhabana extends Module {
         unset($params['fields']['new']);
         unset($params['fields']['pdf']);
         unset($params['fields']['owners']);
-        
+
     }
 
     public function hookDisplayOrderConfirmation ($params) {      
@@ -368,6 +404,10 @@ class Mallhabana extends Module {
 
     public function hookActionPaymentConfirmation($params) {
         $this->service->updateOrderOwner($params['id_order']);
+    }
+
+    public function HookDisplayBackOfficeHeader() {
+        $this->context->controller->addJqueryUi('ui.datepicker');
     }
    
 }
