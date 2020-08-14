@@ -1,4 +1,4 @@
-<form id="configuration_form" class="defaultForm form-horizontal mallhabana" action="" method="post" enctype="multipart/form-data" novalidate="">
+<form id="configuration_form" class="defaultForm form-horizontal mallhabana" action="" method="post" enctype="multipart/form-data" novalidate="" autocomplete="off">
 	
 	<div class="panel" id="fieldset_0">
 		<div class="panel-heading">
@@ -6,7 +6,7 @@
 		</div>
 		<div class="form-wrapper">											
 			<div class="form-group">
-				<label class="control-label col-lg-3 required">Seleccione</label>
+				<label class="control-label col-lg-3 required">Proveedor</label>
 				<div class="col-lg-9">
 					<select name="provider">
 						{foreach $suppliers as $supplier}
@@ -16,42 +16,15 @@
 				</div>
 			</div>
 			<div class="form-group">
-				<label class="control-label col-lg-3 required">Día</label>
+				<label class="control-label col-lg-3 required">Desde</label>
 				<div class="col-lg-9">
-					<select name="day">
-					{for $i=1 to 31}
-						<option value="{$i}">{$i}</option>
-					{/for}
-					</select>
-				</div>
-			</div>	
-			<div class="form-group">
-				<label class="control-label col-lg-3 required">Mes</label>
-				<div class="col-lg-9">
-					<select name="month">
-						<option value="01">Enero</option>
-						<option value="02">Febrero</option>
-						<option value="03">Marzo</option>
-						<option value="04">Abril</option>
-						<option value="05">Mayo</option>
-						<option value="06">Junio</option>
-						<option value="07">Julio</option>
-						<option value="08">Agosto</option>
-						<option value="09">Septiembre</option>
-						<option value="10">Octubre</option>
-						<option value="11">Noviembre</option>
-						<option value="12">Diciembre</option>
-					</select>
+				<input id="start_date" type="text" data-hex="true" class="datepicker" name="start_date" min="2020-08-09" max="{date('Y-m-d')}">
 				</div>
 			</div>		
 			<div class="form-group">
-				<label class="control-label col-lg-3 required">Año</label>
+				<label class="control-label col-lg-3 required">Hasta</label>
 				<div class="col-lg-9">
-					<select name="year">
-					{for $i=2020 to ((int)date(Y)) + 1}
-						<option value="{$i}">{$i}</option>
-					{/for}
-					</select>
+				<input id="end_date" type="text" data-hex="true" class="datepicker" name="end_date" min="2020-08-09" max="{date('Y-m-d')}">
 				</div>
 			</div>																
 		</div><!-- /.form-wrapper -->						
@@ -59,10 +32,20 @@
 		<div class="panel-footer">
 			<button type="submit" value="1" id="configuration_form_submit_btn" name="submitDespacho" class="btn btn-default pull-right">
 				<i class="process-icon-download"></i> Generar
-			</button>	
-			<button type="submit" value="1" id="configuration_form_submit_btn" name="submitDespachoFullOrder" class="btn btn-default pull-right">
-				<i class="process-icon-download"></i> Ordenes
-			</button>					
+			</button>				
 		</div>
 	</div>
 </form>
+<script>
+$("#start_date").datepicker({
+	dateFormat: 'yy-mm-dd',
+	minDate: new Date('2020-08-09'),
+	maxDate: 0
+});
+
+$("#end_date").datepicker({
+	dateFormat: 'yy-mm-dd',
+	minDate: new Date('2020-08-09'),
+	maxDate: 0
+});
+</script>

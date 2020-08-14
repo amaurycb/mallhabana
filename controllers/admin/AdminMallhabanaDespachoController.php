@@ -33,36 +33,25 @@ class AdminMallhabanaDespachoController extends ModuleAdminController {
      * Print individual orders
      */
     public function postProcess() {
-        $month = ((int)Tools::getValue('month') < 10) ? "0".Tools::getValue('month') : Tools::getValue('month');
+        $start_date = Tools::getValue('start_date');
+        $end_date = Tools::getValue('end_date');
         $supplier = (int) Tools::getValue('provider');
-        $year = (int)Tools::getValue('year');
-        $day = ((int)Tools::getValue('day') < 10) ? "0".Tools::getValue('day') : Tools::getValue('day');
         
         if (Tools::isSubmit('submitDespacho')){
            try {
-               $data = $this->service->getOrdersByProviders($supplier, $year."-".$month."-".$day);
-                $orders = $this->service->getOrdersByProvidersIDs($supplier, $year."-".$month."-".$day);
+               $data = $this->service->getOrdersByProviders($supplier, $start_date, $end_date);
+                $orders = $this->service->getOrdersByProvidersIDs($supplier, $start_date, $end_date);
                 $supplier = new Supplier($supplier, 1);
 
                 $this->context->smarty->assign([
                     'provider' => $supplier->name,
-                    'genDate' =>  $year."-".$month."-".$day,
+                    'genDate' =>  "Desde ".  $start_date." hasta ". $end_date,
                     'orders' =>  implode(", ", $orders)
                 ]);
 
                 $pdf = new PDF($data, 'Despacho', Context::getContext()->smarty);
                 $pdf->render();
                 
-            } catch (PrestaShopException $e) {
-                $this->errors[] = $e->getMessage();
-            }
-        }      
-        else if (Tools::isSubmit('submitDespachoFullOrder')){
-            try {
-                $orders = $this->service->getOrdersByProvidersIDs($supplier, $year."-".$month."-".$day);
-                $orderCollection = $this->getOrdersForPrint($orders);
-                $pdf = new PDF($orderCollection, PDF::TEMPLATE_DELIVERY_SLIP, Context::getContext()->smarty);
-                $pdf->render();                
             } catch (PrestaShopException $e) {
                 $this->errors[] = $e->getMessage();
             }
