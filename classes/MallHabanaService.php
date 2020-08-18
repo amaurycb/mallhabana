@@ -211,7 +211,7 @@ class MallHabanaService {
             LEFT JOIN
                 (SELECT GROUP_CONCAT(prstshp_carrier.name) as carrier_name, id_order FROM prstshp_carrier INNER JOIN prstshp_orders ON (prstshp_carrier.id_carrier = prstshp_orders.id_carrier) GROUP BY prstshp_orders.id_order) AS carriers
                 ON (carriers.id_order = o.id_order)
-            WHERE o.current_state in ('.implode(',',$state).')
+            WHERE o.current_state in ('.implode(',',$state).') AND o.date_add >= "2020-08-09"
             GROUP BY o.id_order';
         return Db::getInstance()->executeS($query);
     }

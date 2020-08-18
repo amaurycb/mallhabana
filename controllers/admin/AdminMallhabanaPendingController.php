@@ -17,7 +17,7 @@ class AdminMallhabanaPendingController extends ModuleAdminController {
 
     public function initContent() {
         parent::initContent();
-        $orders = $this->service->ordersBySate([4]);        
+        $orders = $this->service->ordersBySate([3]);        
         $headers = $this->service->pendingHeaders();
         $this->service->excel($headers, $orders);
     }
