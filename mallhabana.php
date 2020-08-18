@@ -51,7 +51,7 @@ class Mallhabana extends Module {
             $this->registerHook('displayAdminOrder') &&                        
             $this->registerHook('displayPDFSupplyOrderForm') &&
             $this->registerHook('actionAdminOrdersListingFieldsModifier') &&
-            $this->registerHook('displayorderConfirmation') &&            
+            $this->registerHook('actionOrderStatusUpdate') &&            
             $this->registerHook('HookDisplayBackOfficeHeader') &&
             $this->registerHook('actionPaymentConfirmation') &&
             Configuration::updateValue('MALLHABANA', 'Funciones complementarias para MallHabana.com');
@@ -168,32 +168,33 @@ class Mallhabana extends Module {
     }
 
      /**
-     * Show aditional info on product view. Redirect to another page if the product does not have stock.
+     * Show aditional info on product view. Redirect to another page if the product does not has stock.
      */
     public function hookDisplayLeftColumnProduct($params) { 
         $languageId = (int)($params['cookie']->id_lang);
         try {         
-            $product = new Product(Tools::getValue('id_product'));
-            $hasQty = StockAvailable::getQuantityAvailableByProduct((int) Tools::getValue('id_product'));
+            // $product = new Product(Tools::getValue('id_product'));
+            // $hasQty = StockAvailable::getQuantityAvailableByProduct((int) Tools::getValue('id_product'));
 
-            $attributes = $product->getAttributesResume($languageId);
-            foreach ($attributes as $attribute) {
-                $id_product_attribute = $attribute['id_product_attribute'];
-                $qty = StockAvailable::getQuantityAvailableByProduct((int) Tools::getValue('id_product'), $id_product_attribute);
-                $hasQty = ($hasQty ? : $qty > 0);
-            }
+            // $attributes = $product->getAttributesResume($languageId);
+            // if (count($attributes) > 0) {                
+            //     foreach ($attributes as $attribute) {
+            //         $id_product_attribute = $attribute['id_product_attribute'];
+            //         $qty = StockAvailable::getQuantityAvailableByProduct((int) Tools::getValue('id_product'), $id_product_attribute);
+            //         $hasQty = ($hasQty ? : $qty > 0);
+            //     }
+            // }
+            // if (!$hasQty) {
+            //     $this->warning[] = Tools::displayError("<b>".$product->name[$languageId]."</b>. ".Configuration::get('NO_STOCK_MESSAGE'));
+            //     $this->service->redirectWithNotifications([
+            //         'error' => $this->errors,
+            //         'warning' => $this->warning,
+            //         'success' => $this->success,
+            //         'info' => $this->info,
+            //     ],Configuration::get('NO_STOCK_REDIRECTION'));
+            // }
 
-            if (!$hasQty) {
-                $this->warning[] = Tools::displayError("<b>".$product->name[$languageId]."</b>. ".Configuration::get('NO_STOCK_MESSAGE'));
-                $this->service->redirectWithNotifications([
-                    'error' => $this->errors,
-                    'warning' => $this->warning,
-                    'success' => $this->success,
-                    'info' => $this->info,
-                ],Configuration::get('NO_STOCK_REDIRECTION'));
-            }
-
-            return '<br/><a class="title_font print_product ml-0" href="javascript:void();"><i class="zmdi zmdi-bus"></i>DISPONIBLE PARA:</a>'.$this->service->getDestinyInfo((int)Tools::getValue('id_product'));
+            // return '<br/><a class="title_font print_product ml-0" href="javascript:void();"><i class="zmdi zmdi-bus"></i>DISPONIBLE PARA:</a>'.$this->service->getDestinyInfo((int)Tools::getValue('id_product'));
 
         } catch (Exception $e) {
            //$this->logger->logDebug($e->getMessage()); 
@@ -398,8 +399,11 @@ class Mallhabana extends Module {
 
     }
 
-    public function hookDisplayOrderConfirmation ($params) {      
-        // $this->service->updateOrderOwner($params['order']->id);       
+    public function hookActionOrderStatusUpdate ($params) {
+        // //En Preparación
+        // if($params['newOrderStatus']->id == 3) {
+        //     $this->service->updateOrderOwner((int)$params['id_order']); 
+        // }
     }
 
     public function hookActionPaymentConfirmation($params) {

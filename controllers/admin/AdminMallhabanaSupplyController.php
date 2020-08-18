@@ -25,7 +25,7 @@ class AdminMallhabanaSupplyController extends ModuleAdminController {
             $this->carriers[$carrier['id_carrier']] =  $carrier['name'];
         }
        
-        $this->_select = ' a.id_carrier, c.name as carrier_name, osl.name as state_name, os.color, DATE(a.date_add) as dated';
+        $this->_select = ' a.id_carrier, c.name as carrier_name, osl.name as state_name, os.color';
         $this->_join = '
           JOIN '._DB_PREFIX_.'carrier c ON (c.id_carrier = a.id_carrier)
           LEFT JOIN '._DB_PREFIX_.'order_state os ON (os.id_order_state = a.current_state)
@@ -48,13 +48,15 @@ class AdminMallhabanaSupplyController extends ModuleAdminController {
             'id_order' => array(
                 'title' => $this->module->l('ID'), 
                 'align' => 'text-center',
-                'class' => 'fixed-width-xs',
+                'class' => 'fixed-width-md',
             ),
-            'dated' => array(
+            'date_add' => array(
                 'title' => $this->module->l('Fecha de la Orden'),
+                'type' => 'date',
+                'filter_key' => 'a!date_add',
                 'align' => 'text-center',
-                'type'=>'datetime',   
-                'class' => 'fixed-width-md'
+                'class' => 'fixed-width-md',
+                'search' => true   
             ),            
             'carrier_name' => array(
                 'title' => $this->module->l('Transportista'),

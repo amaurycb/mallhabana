@@ -329,6 +329,12 @@ class MallHabanaService {
             $product_list = array();
             foreach ($order->getProducts() as $product) {
                 if((int)$product['product_id'] == (int)$valueI['id_product']) {
+                    $detail = $this->getProductCustomization((int)$product['product_id'], $order->id_cart);
+                    if (isset($detail['name']) && isset($detail['value'])) {
+                        $detail = "</br><b>".$detail['name'].":</b> ".$detail['value']; 
+                    } else {
+                        $detail = "";
+                    }
 
                     $htmlProduct = '<tr style="text-align: center;">
                                         <td style="width:25%">
@@ -338,7 +344,8 @@ class MallHabanaService {
                                         </td>
                                         <td style="width:35%">
                                             <font size="2" face="Open-sans, sans-serif" color="#555454">
-                                                <strong>'.$product['product_name'].' (Cantidad: '. (int)$valueI['qty'].')</strong>
+                                                <strong>'.$product['product_name'].'</strong></br>
+                                                <b>Cantidad:</b> '. (int)$valueI['qty']." ".$detail.'
                                             </font>
                                         </td>
                                         <td style="width:20%">
@@ -417,7 +424,8 @@ class MallHabanaService {
         inner JOIN '._DB_PREFIX_.'product p ON (p.id_product = a.product_id)
         inner JOIN '._DB_PREFIX_.'order_state os ON (os.id_order_state = o.current_state) 
         WHERE os.id_order_state IN (2,3,4,5) AND p.id_supplier = '.(int)$supplier.' 
-        AND DATE(o.date_add) >= "'.$start.'" AND DATE(o.date_add) <= "'.$end.'"');
+        AND DATE(o.date_add) >= "'.$start.'" AND DATE(o.date_add) <= "'.$end.'" 
+        ORDER BY a.id_order ASC');
         
         $result = [];
         foreach ($data as $item) {            
@@ -431,6 +439,7 @@ class MallHabanaService {
         SELECT  a.product_name,
                 a.product_quantity,
                 a.product_reference,
+                a.product_id,
                 a.id_order
         FROM '._DB_PREFIX_.'order_detail a
         inner JOIN '._DB_PREFIX_.'orders o ON (o.id_order = a.id_order)
@@ -438,6 +447,26 @@ class MallHabanaService {
         inner JOIN '._DB_PREFIX_.'order_carrier oc ON (oc.id_order = a.id_order) 
         WHERE os.id_order_state IN (2,3,4,5) AND oc.id_carrier = '.(int)$carrierId.' 
         AND DATE(o.date_add) = "'.$date.'"');
+    }
+
+    public function getProductCustomization ($id_product, $id_cart) {
+        return Db::getInstance()->executeS('SELECT cd.value, cfl.name FROM prstshp_customization c
+        INNER JOIN prstshp_customized_data cd ON cd.id_customization = c.id_customization
+        INNER JOIN prstshp_customization_field cf ON cf.id_product = c.id_product
+        INNER JOIN prstshp_customization_field_lang cfl ON cfl.id_customization_field = cf.id_customization_field
+        WHERE cfl.id_lang = 1 AND c.id_product = '.(int)$id_product.' AND c.id_cart = '.(int)$id_cart);
+    }
+
+    public function getProductsByOrderAndSupplier ($supplier, $order) {        
+        $data = Db::getInstance()->executeS('
+        SELECT a.* 
+        FROM '._DB_PREFIX_.'order_detail a
+        inner JOIN '._DB_PREFIX_.'orders o ON (o.id_order = a.id_order)
+        inner JOIN '._DB_PREFIX_.'product p ON (p.id_product = a.product_id)
+        inner JOIN '._DB_PREFIX_.'order_state os ON (os.id_order_state = o.current_state) 
+        WHERE o.id_order = '.(int)$order.' AND p.id_supplier = '.(int)$supplier);
+        
+        return $data;      
     }
 
 }

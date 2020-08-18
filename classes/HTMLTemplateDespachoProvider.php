@@ -1,6 +1,6 @@
 <?php
 
-class HTMLTemplateDespachoCarrier extends HTMLTemplate
+class HTMLTemplateDespachoProvider extends HTMLTemplate
 {
 	public $orders;
 	public $provider;
@@ -12,7 +12,7 @@ class HTMLTemplateDespachoCarrier extends HTMLTemplate
 
 		// header informations
 		$id_lang = Context::getContext()->language->id;
-		$this->title ='Despacho Transportista';
+		$this->title ='Despacho Proveedores';
 		// footer informations
 		$this->shop = new Shop(Context::getContext()->shop->id);
 	}
@@ -26,7 +26,7 @@ class HTMLTemplateDespachoCarrier extends HTMLTemplate
 		$this->smarty->assign([
 			'orders' => $this->orders
 		]);
-		return $this->smarty->fetch(_PS_MODULE_DIR_ . 'mallhabana/views/templates/admin/pdf_despacho_carrier.tpl');
+		return $this->smarty->fetch(_PS_MODULE_DIR_ . 'mallhabana/views/templates/admin/pdf_despacho_provider.tpl');
 	}
 
 	/**
@@ -35,7 +35,7 @@ class HTMLTemplateDespachoCarrier extends HTMLTemplate
 	 */
 	public function getFilename()
 	{
-		return date('YmdHis').'-DespachoTransportista.pdf';
+		return date('YmdHis').'-DespashoOrdenes.pdf';
 	}
 
 	/**
@@ -44,7 +44,7 @@ class HTMLTemplateDespachoCarrier extends HTMLTemplate
 	 */
 	public function getBulkFilename()
 	{
-		return date('YmdHis').'-DespachoTransportista.pdf';
+		return date('YmdHis').'-DespashoOrdenes.pdf';
 	}
 
 	public function getFooter()

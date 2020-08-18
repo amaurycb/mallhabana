@@ -8,7 +8,7 @@
 			<div class="form-group">
 				<label class="control-label col-lg-3 required">Proveedor</label>
 				<div class="col-lg-9">
-					<select name="provider">
+					<select name="provider" required="required">
 						{foreach $suppliers as $supplier}
 							<option value="{$supplier->id_supplier}">{$supplier->name}</option>
 						{/foreach}
@@ -30,8 +30,11 @@
 		</div><!-- /.form-wrapper -->						
 					
 		<div class="panel-footer">
-			<button type="submit" value="1" id="configuration_form_submit_btn" name="submitDespacho" class="btn btn-default pull-right">
-				<i class="process-icon-download"></i> Generar
+			<button type="submit" value="1" id="configuration_form_submit_btn" name="submitOrders" class="btn btn-default pull-right">
+				<i class="process-icon-download"></i> Órdenes
+			</button>	
+			<button type="submit" value="1" id="configuration_form_submit_btn_" name="submitDespacho" class="btn btn-default pull-right">
+				<i class="process-icon-download"></i> Despacho
 			</button>				
 		</div>
 	</div>

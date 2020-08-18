@@ -2,6 +2,7 @@
 
 require_once dirname(__FILE__) . '/../../classes/MallHabanaService.php';
 require_once dirname(__FILE__) . '/../../classes/HTMLTemplateDespacho.php';
+require_once dirname(__FILE__) . '/../../classes/HTMLTemplateDespachoProvider.php';
 
 /**
  * Class CubacelBackController
@@ -36,17 +37,16 @@ class AdminMallhabanaDespachoController extends ModuleAdminController {
         $start_date = Tools::getValue('start_date');
         $end_date = Tools::getValue('end_date');
         $supplier = (int) Tools::getValue('provider');
-        
-        if (Tools::isSubmit('submitDespacho')){
-           try {
-               $data = $this->service->getOrdersByProviders($supplier, $start_date, $end_date);
-                $orders = $this->service->getOrdersByProvidersIDs($supplier, $start_date, $end_date);
-                $supplier = new Supplier($supplier, 1);
+        $data = $this->service->getOrdersByProviders($supplier, $start_date, $end_date);
+        $ordersIds = $this->service->getOrdersByProvidersIDs($supplier, $start_date, $end_date);
+        $supplier = new Supplier($supplier, 1);
 
+        if (Tools::isSubmit('submitDespacho')){
+           try {  
                 $this->context->smarty->assign([
                     'provider' => $supplier->name,
                     'genDate' =>  "Desde ".  $start_date." hasta ". $end_date,
-                    'orders' =>  implode(", ", $orders)
+                    'orders' =>  implode(", ", $ordersIds)
                 ]);
 
                 $pdf = new PDF($data, 'Despacho', Context::getContext()->smarty);
@@ -55,9 +55,71 @@ class AdminMallhabanaDespachoController extends ModuleAdminController {
             } catch (PrestaShopException $e) {
                 $this->errors[] = $e->getMessage();
             }
-        }      
+        } 
+        else if (Tools::isSubmit('submitOrders')){
+            try {
+                $products = [];
+                $orders = [];
+                $customers = [];     
+                foreach ($ordersIds as $oId) {    
+                    $totalOrder = 0;    
+                    $fullProducts = $this->service->getProductsByOrderAndSupplier($supplier->id, $oId);         
+                    $order = new Order($oId,1);
+                    $orders[$oId] = [$order];  
+                    foreach ($fullProducts as $p) {     
+                        $detail = $this->service->getProductCustomization((int)$p['product_id'], $order->id_cart);
+                        if (isset($detail[0])) {
+                            $detail = " (Detalle: ".$detail[0]['value']. ")"; 
+                        } else {
+                            $detail = "";
+                        }
+                        $p['product_name'] =  $p['product_name'] .$detail;                
+                        $products[$oId][] = $p;              
+                        $totalOrder += ($p["original_wholesale_price"] * $p["product_quantity"]);  
+                    }    
+                    $customer = new Customer($order->id_customer,1);
+                    $address = new Address($order->id_address_delivery,1);
+                    $state = new State ($address->id_state,1);
+                    $country = new Country ($address->id_country,1);
+                   
+                    $customers[$oId] = [
+                        'name' => $customer->firstname. " " .  $customer->lastname,
+                        'destiny' => $address->firstname . " " . $address->lastname,
+                        'phone' => $address->phone,
+                        'address' => $address->address1. ", Entre: ". $address->address2. ", ". $address->city. ", ". $state->name. ", ". $country->name,
+                        'url_code_qr'       => Configuration::get('SITE_URL').'img/codes/qr/'.$oId.".jpg",
+                        'url_code_barcode'  => Configuration::get('SITE_URL').'img/codes/barcode/'.$oId.".jpg",
+                        'id_order'          => $oId,
+                        'totalOrder'        => $totalOrder
+                    ];       
+                
+                }
+                // $supplier = new Supplier($provider, 1);
+                $this->context->smarty->assign([
+                    'supplier' => $supplier->name,
+                    'genDate' => date('Y-m-d'),
+                    'date' => date('Y-m-d'),
+                    'products' => $products,
+                    'orders' => $orders,
+                    'customers' => $customers                    
+                ]);
+
+                $pdf = new PDF($orders, 'DespachoProvider', Context::getContext()->smarty);
+                return $pdf->render();
+            } catch (PrestaShopException $e) {
+                $this->errors[] = $e->getMessage();
+            }
+        }         
         parent::postProcess();
 
+    }
+
+    /**
+     * Despacho proveedores
+     */
+    private function bySupplier($ordersIds, $provider) {  
+           
+        
     }
 
         /**

@@ -1,4 +1,18 @@
 {foreach $orders as $item} 
+<table style="width: 100%">
+<tr>
+	<td style="width: 50%; text-align: left;">
+		{if $customers[$item->id]['url_code_qr']}
+			<img src="{$customers[$item->id]['url_code_qr']}" style="width:70px; height:70px;  padding:0px;" />
+		{/if}
+	</td>
+	<td style="width: 50%; text-align: right;">
+        {if $customers[$item->id]['url_code_barcode']}
+		    <img src="{$customers[$item->id]['url_code_barcode']}" style="width:130px; height:65px;  padding:0px;" />
+        {/if}
+	</td>
+</tr>
+</table>
 <table>
     <tr>
 <table>
@@ -100,6 +114,5 @@
 </table>
 </tr>
 </table>
-<div class="page-break-after: always;"></div>
 {/foreach}
 
