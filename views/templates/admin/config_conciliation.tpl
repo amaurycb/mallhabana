@@ -1,4 +1,4 @@
-<form id="configuration_form" class="defaultForm form-horizontal mallhabana" action="{$url}" method="post" enctype="multipart/form-data" novalidate="">
+<form id="configuration_form" class="defaultForm form-horizontal mallhabana" action="" method="post" enctype="multipart/form-data" novalidate="">
 	<input type="hidden" name="submitConciliation" value="1">
 	<div class="panel" id="fieldset_0">
 		<div class="panel-heading">
@@ -9,7 +9,7 @@
 				<label class="control-label col-lg-3 required">Proveedor</label>
 				<div class="col-lg-9">
 					<select name="provider">
-						<option value="0">Todos los Proveedores</option>
+						<option>Todos los Proveedores</option>
 						{foreach $suppliers as $supplier}
 							<option value="{$supplier->id_supplier}">{$supplier->name}</option>
 						{/foreach}

@@ -144,12 +144,11 @@ class MallHabanaService {
      * Get suppliers
      */
     public function getSuppliers($idSupplier = null) {
-        $result = [];
-        $suppliers = new Collection('ProductSupplier');
-        $suppliers->groupBy('id_supplier');
-        if (empty($idSupplier)) {            
+        $result = [];       
+        if (empty($idSupplier)) { 
+            $suppliers =  Db::getInstance()->executeS('SELECT s.id_supplier FROM '._DB_PREFIX_.'supplier s');
             foreach($suppliers as $supplier) {
-                $result[] = new Supplier($supplier->id_supplier, 1);
+                $result[] = new Supplier($supplier["id_supplier"], 1);
             }
         } else {
             $result[] = new Supplier($idSupplier, 1);
@@ -175,8 +174,10 @@ class MallHabanaService {
     public function conciliationHeaders() {
        return  
        ['id_order' => 'Id Order',
+        'reference' => 'Referencia',
         'state_name' => 'Estado',
         'payment' => 'Método de pago',
+        'municipio' => 'Municipio',
         'client' => 'Cliente',
         'destiny' => 'Destinatario',
         'created_at' => 'Creado el',
@@ -235,8 +236,10 @@ class MallHabanaService {
     public function ordersAllProvidersByDate($month, $year, int $supplierId = null) {
         $supplierCondition = !empty($supplierId) ? " AND s.id_supplier = $supplierId" : "";
         $query = 'SELECT o.id_order as id_order, 
+                    o.reference as reference,
                     osl.name as state_name,
                     o.payment,
+                    st.name as municipio,
                     CONCAT (c.firstname, " ", c.lastname) as client,
                     CONCAT (a.firstname, " ", a.lastname) as destiny,
                     o.date_add as created_at,
@@ -253,6 +256,7 @@ class MallHabanaService {
             INNER JOIN prstshp_order_state_lang osl ON (osl.id_order_state = o.current_state AND osl.id_lang = 1  ) 
             INNER JOIN prstshp_customer c ON (c.id_customer = o.id_customer) 
             INNER JOIN prstshp_address a ON (a.id_address = o.id_address_delivery) 
+            INNER JOIN prstshp_state st ON (a.id_state = st.id_state) 
             LEFT JOIN prstshp_order_history AS oh ON (oh.id_order = o.id_order AND oh.id_order_state = 2)
             LEFT JOIN prstshp_currency AS cu ON (cu.id_currency = o.id_currency)
             LEFT JOIN prstshp_product AS p ON (p.id_product = od.product_id)
@@ -271,10 +275,12 @@ class MallHabanaService {
         foreach ($orders as $order) {
             $idOrder = $order['id_order'];
             foreach ($suppliersFull as $key => $supplier) {
-                $order = array_merge(array_slice($order, 0, 8), [
-                    'supplier_total'.$key  => $this->getOrderTotalBySupplier($idOrder[0], $supplier->id_supplier)
-                ], array_slice($order, 8));
-                $headers = array_merge(array_slice($headers, 0, 8), ['sp'.$key => $supplier->name], array_slice($headers, 8));
+                if (!empty($supplier->id)) {
+                    $order = array_merge(array_slice($order, 0, 10), [
+                        'supplier_total'.$key  => $this->getOrderTotalBySupplier( $idOrder, $supplier->id)
+                    ], array_slice($order, 8));
+                    $headers = array_merge(array_slice($headers, 0, 10), ['sp'.$key => $supplier->name], array_slice($headers, 8));
+                }
             }
             $result[] = $order;
         }
@@ -282,13 +288,12 @@ class MallHabanaService {
     }
 
     public function getOrderTotalBySupplier ($idOrder, $idSupplier) {
-        $query = 'SELECT 
-                    FORMAT(SUM(od.product_price * od.product_quantity),2) as supplier_total
+        $query = 'SELECT FORMAT(SUM((od.original_wholesale_price * od.product_quantity)),2) as supplier_total
             FROM prstshp_order_detail AS od
             INNER JOIN prstshp_orders AS o ON (o.id_order = od.id_order) 
             INNER JOIN prstshp_product AS p ON (p.id_product = od.product_id)
             INNER JOIN prstshp_supplier AS s ON (s.id_supplier = p.id_supplier AND s.id_supplier = '.$idSupplier.')
-            WHERE od.id_order = '.$idOrder.'  GROUP BY s.id_supplier';
+            WHERE od.id_order = '.$idOrder;
         $data = Db::getInstance()->executeS($query);
         return !empty($data[0]['supplier_total']) ? $data[0]['supplier_total'] : '0.00';
     }
