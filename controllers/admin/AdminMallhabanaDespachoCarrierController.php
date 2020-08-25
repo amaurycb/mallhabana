@@ -64,6 +64,7 @@ class AdminMallhabanaDespachoCarrierController extends ModuleAdminController {
                     'name' => $customer->firstname. " " .  $customer->lastname,
                     'destiny' => $address->firstname . " " . $address->lastname,
                     'phone' => $address->phone,
+                    'ci' => $address->dni,
                     'address' => $address->address1. ", Entre: ". $address->address2. ", ". $address->city. ", ". $state->name. ", ". $country->name,
                     'url_code_qr'       => Configuration::get('SITE_URL').'img/codes/qr/'.$p['id_order'].".jpg",
                     'url_code_barcode'  => Configuration::get('SITE_URL').'img/codes/barcode/'.$p['id_order'].".jpg",

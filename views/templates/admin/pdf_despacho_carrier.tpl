@@ -23,6 +23,7 @@
             <p style="color: #333; font-size: 11px;"><b>Destinatario:</b> {$customers[$item->id]['destiny']}</p>    
             <p style="color: #333; font-size: 11px;"><b>Dirección:</b> {$customers[$item->id]['address']}</p>    
             <p style="color: #333; font-size: 11px;"><b>Teléfono:</b> {$customers[$item->id]['phone']}</p>
+            <p style="color: #333; font-size: 11px;"><b>CI:</b> {$customers[$item->id]['ci']}</p>
         </td>
         <td style="text-align:right; ">
             <h2>{$carrier}</h2>
