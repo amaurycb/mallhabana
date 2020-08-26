@@ -474,4 +474,23 @@ class MallHabanaService {
         return $data;      
     }
 
+    public function getZoneByAddresDelivery ($idAddressDelivery) {
+        $data =  Db::getInstance()->executeS('
+        SELECT c.id_zone
+        FROM '._DB_PREFIX_.'address a
+        INNER JOIN '._DB_PREFIX_.'country c ON (c.id_country = a.id_country)
+        WHERE a.id_address = '.(int)$idAddressDelivery.' AND a.active = 1');
+        return isset($data[0]) ? $data[0]['id_zone'] : null;
+    }
+
+    public function canDeliveryToThisZone ($idProduct, $idZone) {
+        $data =  Db::getInstance()->executeS('
+        SELECT c.id_carrier
+        FROM '._DB_PREFIX_.'carrier c
+        INNER JOIN '._DB_PREFIX_.'product_carrier pc ON (c.id_reference = pc.id_carrier_reference)
+        INNER JOIN '._DB_PREFIX_.'delivery d ON (d.id_carrier = c.id_carrier)
+        WHERE pc.id_product = '.(int)$idProduct.' AND d.id_zone = '.(int)$idZone. ' AND c.active = 1 AND c.deleted = 0 ');
+        // var_dump(isset($data[0]['id_carrier']));
+        return (isset($data[0]['id_carrier']));
+    }
 }

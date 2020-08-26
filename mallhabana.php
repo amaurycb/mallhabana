@@ -42,8 +42,6 @@ class Mallhabana extends Module {
         return parent::install() &&
             $this->registerHook('header') &&
             $this->registerHook('displayHeader') &&
-            $this->registerHook('displayLeftColumnProduct') &&
-            $this->registerHook('filterProductSearch') &&
             $this->registerHook('actionOrderStatusPostUpdate') &&
             $this->registerHook('displayPDFInvoice') &&    
             $this->registerHook('displayPDFSupplyOrder') &&      
@@ -51,9 +49,9 @@ class Mallhabana extends Module {
             $this->registerHook('displayAdminOrder') &&                        
             $this->registerHook('displayPDFSupplyOrderForm') &&
             $this->registerHook('actionAdminOrdersListingFieldsModifier') &&
-            $this->registerHook('actionOrderStatusUpdate') &&            
             $this->registerHook('HookDisplayBackOfficeHeader') &&
             $this->registerHook('actionPaymentConfirmation') &&
+            $this->registerHook('actionCarrierProcess') &&
             Configuration::updateValue('MALLHABANA', 'Funciones complementarias para MallHabana.com');
     }
 
@@ -98,21 +96,21 @@ class Mallhabana extends Module {
                 'title' => $this->l('Configuración de MallHabana'),
             ],
             'input' => [
-                [
-                    'type' => 'text',
-                    'label' => $this->l('Redirección Productos sin Stock'),
-                    'name' => 'MALLHABANA[NO_STOCK_REDIRECTION]',
-                    'required' => true,
-                    'cols' => 2,
-                    'prefix' => '<i class="icon-link"></i>'
-                ],
-                [
-                    'type' => 'text',
-                    'label' => $this->l('Mensaje Productos sin Stock'),
-                    'name' => 'MALLHABANA[NO_STOCK_MESSAGE]',
-                    'required' => true,
-                    'cols' => 2,
-                ],  
+                // [
+                //     'type' => 'text',
+                //     'label' => $this->l('Redirección Productos sin Stock'),
+                //     'name' => 'MALLHABANA[NO_STOCK_REDIRECTION]',
+                //     'required' => true,
+                //     'cols' => 2,
+                //     'prefix' => '<i class="icon-link"></i>'
+                // ],
+                // [
+                //     'type' => 'text',
+                //     'label' => $this->l('Mensaje Productos sin Stock'),
+                //     'name' => 'MALLHABANA[NO_STOCK_MESSAGE]',
+                //     'required' => true,
+                //     'cols' => 2,
+                // ],  
                 [
                     'type' => 'text',
                     'label' => $this->l('Url base de la tienda'),
@@ -167,48 +165,6 @@ class Mallhabana extends Module {
         return $helper->generateForm($fieldsForm);
     }
 
-     /**
-     * Show aditional info on product view. Redirect to another page if the product does not has stock.
-     */
-    public function hookDisplayLeftColumnProduct($params) { 
-        $languageId = (int)($params['cookie']->id_lang);
-        try {         
-            // $product = new Product(Tools::getValue('id_product'));
-            // $hasQty = StockAvailable::getQuantityAvailableByProduct((int) Tools::getValue('id_product'));
-
-            // $attributes = $product->getAttributesResume($languageId);
-            // if (count($attributes) > 0) {                
-            //     foreach ($attributes as $attribute) {
-            //         $id_product_attribute = $attribute['id_product_attribute'];
-            //         $qty = StockAvailable::getQuantityAvailableByProduct((int) Tools::getValue('id_product'), $id_product_attribute);
-            //         $hasQty = ($hasQty ? : $qty > 0);
-            //     }
-            // }
-            // if (!$hasQty) {
-            //     $this->warning[] = Tools::displayError("<b>".$product->name[$languageId]."</b>. ".Configuration::get('NO_STOCK_MESSAGE'));
-            //     $this->service->redirectWithNotifications([
-            //         'error' => $this->errors,
-            //         'warning' => $this->warning,
-            //         'success' => $this->success,
-            //         'info' => $this->info,
-            //     ],Configuration::get('NO_STOCK_REDIRECTION'));
-            // }
-
-            // return '<br/><a class="title_font print_product ml-0" href="javascript:void();"><i class="zmdi zmdi-bus"></i>DISPONIBLE PARA:</a>'.$this->service->getDestinyInfo((int)Tools::getValue('id_product'));
-
-        } catch (Exception $e) {
-           //$this->logger->logDebug($e->getMessage()); 
-            return false;
-        }         
-    }
-
-     /**
-     * Filter proucto search. The idea is only show in stock productos on search result.
-     */
-    public function hookFilterProductSearch($params) {
-        return $params['searchVariables'];        
-    }
-    
     /**
      * Add the CSS & JavaScript files you want to be added on the FO.
      */
@@ -399,19 +355,27 @@ class Mallhabana extends Module {
 
     }
 
-    public function hookActionOrderStatusUpdate ($params) {
-        // //En Preparación
-        // if($params['newOrderStatus']->id == 3) {
-        //     $this->service->updateOrderOwner((int)$params['id_order']); 
-        // }
-    }
-
     public function hookActionPaymentConfirmation($params) {
         $this->service->updateOrderOwner($params['id_order']);
     }
 
     public function HookDisplayBackOfficeHeader() {
         $this->context->controller->addJqueryUi('ui.datepicker');
+    }
+
+    public function hookActionCarrierProcess($params) {
+        $products = $params['cart']->getProducts(true);
+        $zona = $this->service->getZoneByAddresDelivery($params['cart']->id_address_delivery);
+        $canDelivery = 0;
+        if (!empty($zona)) {
+            foreach ($products as $product) {
+                $productObj = new Product($product['id_product'], 1);
+                if($productObj->is_virtual == 1 || $this->service->canDeliveryToThisZone($productObj->id, $zona)) {
+                    $canDelivery ++;
+                }
+            }
+        } 
+        echo '<input type="hidden" id="mallhabana_can_delivery" value="'. ((count($products) === $canDelivery) ? 1 : 0) . '">';
     }
    
 }
