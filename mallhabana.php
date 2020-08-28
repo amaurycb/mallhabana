@@ -51,7 +51,7 @@ class Mallhabana extends Module {
             $this->registerHook('actionAdminOrdersListingFieldsModifier') &&
             $this->registerHook('HookDisplayBackOfficeHeader') &&
             $this->registerHook('actionPaymentConfirmation') &&
-            $this->registerHook('actionCarrierProcess') &&
+            $this->registerHook('displayBeforeCarrier') &&
             Configuration::updateValue('MALLHABANA', 'Funciones complementarias para MallHabana.com');
     }
 
@@ -363,7 +363,7 @@ class Mallhabana extends Module {
         $this->context->controller->addJqueryUi('ui.datepicker');
     }
 
-    public function hookActionCarrierProcess($params) {
+    public function hookDisplayBeforeCarrier ($params) {
         $products = $params['cart']->getProducts(true);
         $zona = $this->service->getZoneByAddresDelivery($params['cart']->id_address_delivery);
         $canDelivery = 0;
@@ -375,7 +375,18 @@ class Mallhabana extends Module {
                 }
             }
         } 
-        echo '<input type="hidden" id="mallhabana_can_delivery" value="'. ((count($products) === $canDelivery) ? 1 : 0) . '">';
+        echo '<input type="hidden" id="mallhabana_can_delivery" value="'. ((count($products) === $canDelivery) ? 1 : 0) . '"> 
+        <script>
+        document.ready(function(){
+            if ($("#mallhabana_can_delivery").val() == "0") {
+                $("div.delivery-options-list").html(\'<p class="alert alert-danger">Desafortunadamente, no disponemos de ningún transportista disponible para su dirección de envío.</p>\')
+                $("#checkout-payment-step").remove();
+            }
+            if ($(".delivery-options-list p.alert.alert-danger").length > 0) {
+                $("#checkout-payment-step").remove();
+            }
+        })
+        </script>';
     }
    
 }
