@@ -497,4 +497,16 @@ class MallHabanaService {
     public function canViewAll($employee) {
         return in_array((int)$employee->id_profile, [1,7]);
     }
+
+    public function updateProductQuantity($id_product, $qty) {
+        Db::getInstance()->execute('
+            update '._DB_PREFIX_.'stock_available psa 
+            join '._DB_PREFIX_.'product p on psa.id_product = p.id_product 
+            set psa.quantity = '.$qty.'   
+            where psa.id_product = '.$id_product);
+        Db::getInstance()->execute('
+            update '._DB_PREFIX_.'product p 
+            set p.quantity = '.$qty.'   
+            where p.id_product = '.$id_product);
+    }
 }

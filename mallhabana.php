@@ -251,6 +251,23 @@ class Mallhabana extends Module {
                 $tab->name[$language['id_lang']] = $this->l('Pedidos');
             }
             $tab->id_parent = $parentTab->id;
+            $tab->icon = 'shopping_basket';
+            $tab->module = $this->name;
+            $tab->add();
+        }
+
+        if (!(int) Tab::getIdFromClassName('AdminMallhabanaProducts')) {
+            $parentTabID = Tab::getIdFromClassName('AdminMallhabana');
+            $parentTab = new Tab($parentTabID);
+
+            $tab = new Tab();
+            $tab->active = 1;
+            $tab->class_name = "AdminMallhabanaProducts";
+            $tab->name = array();
+            foreach ($languages as $language) {
+                $tab->name[$language['id_lang']] = $this->l('Products');
+            }
+            $tab->id_parent = $parentTab->id;
             $tab->icon = 'receipt';
             $tab->module = $this->name;
             $tab->add();
