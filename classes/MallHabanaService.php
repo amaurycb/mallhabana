@@ -493,4 +493,8 @@ class MallHabanaService {
         // var_dump(isset($data[0]['id_carrier']));
         return (isset($data[0]['id_carrier']));
     }
+
+    public function canViewAll($employee) {
+        return in_array((int)$employee->id_profile, [1,7]);
+    }
 }

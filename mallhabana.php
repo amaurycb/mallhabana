@@ -239,22 +239,22 @@ class Mallhabana extends Module {
             $parentTab->add();
         }
 
-        // if (!(int) Tab::getIdFromClassName('AdminMallhabanaSupply')) {
-        //     $parentTabID = Tab::getIdFromClassName('AdminMallhabana');
-        //     $parentTab = new Tab($parentTabID);
+        if (!(int) Tab::getIdFromClassName('AdminMallhabanaOrders')) {
+            $parentTabID = Tab::getIdFromClassName('AdminMallhabana');
+            $parentTab = new Tab($parentTabID);
 
-        //     $tab = new Tab();
-        //     $tab->active = 1;
-        //     $tab->class_name = "AdminMallhabanaSupply";
-        //     $tab->name = array();
-        //     foreach ($languages as $language) {
-        //         $tab->name[$language['id_lang']] = $this->l('Despacho');
-        //     }
-        //     $tab->id_parent = $parentTab->id;
-        //     $tab->icon = 'receipt';
-        //     $tab->module = $this->name;
-        //     $tab->add();
-        // }
+            $tab = new Tab();
+            $tab->active = 1;
+            $tab->class_name = "AdminMallhabanaOrders";
+            $tab->name = array();
+            foreach ($languages as $language) {
+                $tab->name[$language['id_lang']] = $this->l('Pedidos');
+            }
+            $tab->id_parent = $parentTab->id;
+            $tab->icon = 'receipt';
+            $tab->module = $this->name;
+            $tab->add();
+        }
 
         if (!(int) Tab::getIdFromClassName('AdminMallhabanaConciliation')) {
             $parentTabID = Tab::getIdFromClassName('AdminMallhabana');
