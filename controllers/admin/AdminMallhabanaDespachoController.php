@@ -37,8 +37,14 @@ class AdminMallhabanaDespachoController extends ModuleAdminController {
         $start_date = Tools::getValue('start_date');
         $end_date = Tools::getValue('end_date');
         $supplier = (int) Tools::getValue('provider');
-        $data = $this->service->getOrdersByProviders($supplier, $start_date, $end_date);
+        $orders = !empty(Tools::getValue('orders')) ? explode(",", Tools::getValue('orders')) : [];
+        $intOrders = [];
+        foreach ($orders as $o) {
+            $intOrders[] = (int) $o;
+        }
+        $data = $this->service->getOrdersByProviders($supplier, $start_date, $end_date, $intOrders);
         $ordersIds = $this->service->getOrdersByProvidersIDs($supplier, $start_date, $end_date);
+        $orders = array_merge($ordersIds, $intOrders);
         $supplier = new Supplier($supplier, 1);
 
         if (Tools::isSubmit('submitDespacho')){
@@ -46,7 +52,7 @@ class AdminMallhabanaDespachoController extends ModuleAdminController {
                 $this->context->smarty->assign([
                     'provider' => $supplier->name,
                     'genDate' =>  "Desde ".  $start_date." hasta ". $end_date,
-                    'orders' =>  implode(", ", $ordersIds)
+                    'orders' =>  implode(", ", $orders)
                 ]);
 
                 $pdf = new PDF($data, 'Despacho', Context::getContext()->smarty);

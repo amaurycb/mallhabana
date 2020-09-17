@@ -15,7 +15,13 @@
 					</select>
 				</div>
 			</div>
-				
+			<div class="form-group">
+				<label class="control-label col-lg-3 ">Orders IDs</label>
+				<div class="col-lg-9">
+					<input type="text" class="" name="orders">
+					<i>Escriba los IDs de las órdenes separados por coma. Ej.: (123456,123457,123458)</i>
+				</div>
+			</div>	
 			<div class="form-group">
 				<label class="control-label col-lg-3 required">Fecha</label>
 				<div class="col-lg-9">

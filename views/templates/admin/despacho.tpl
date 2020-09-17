@@ -16,6 +16,13 @@
 				</div>
 			</div>
 			<div class="form-group">
+				<label class="control-label col-lg-3 ">Orders IDs</label>
+				<div class="col-lg-9">
+					<input type="text" class="" name="orders">
+					<i>Escriba los IDs de las órdenes separados por coma. Ej.: (123456,123457,123458)</i>
+				</div>
+			</div>
+			<div class="form-group">
 				<label class="control-label col-lg-3 required">Desde</label>
 				<div class="col-lg-9">
 				<input id="start_date" type="text" data-hex="true" class="datepicker" name="start_date" min="2020-08-09" max="{date('Y-m-d')}">

@@ -35,10 +35,15 @@ class AdminMallhabanaDespachoCarrierController extends ModuleAdminController {
     public function postProcess() {
         $date = Tools::getValue('date_query');
         $carrierId = (int) Tools::getValue('carrier');
-      
-        // if (Tools::isSubmit('submitDespachoCarrier')){
+        $carrier = new Carrier($carrierId, 1);
+        $ordersIds = !empty(Tools::getValue('orders')) ? explode(",", Tools::getValue('orders')) : [];
+        $intOrders = [];
+        foreach ($ordersIds as $o) {
+            $intOrders[] = (int) $o;
+        }
+        if (Tools::isSubmit('submitDespachoCarrier')){
         try {
-            $fullProducts = $this->service->getOrdersProductsByCarrier($carrierId, $date);
+            $fullProducts = $this->service->getOrdersProductsByCarrier($carrierId, $date, $intOrders);
             $products = [];
             $orders = [];
             $customers = [];
@@ -70,9 +75,7 @@ class AdminMallhabanaDespachoCarrierController extends ModuleAdminController {
                     'url_code_barcode'  => Configuration::get('SITE_URL').'img/codes/barcode/'.$p['id_order'].".jpg",
                     'id_order'          => $p['id_order']
                 ];
-            }
-            
-            $carrier = new Carrier($carrierId, 1);
+            } 
 
             $this->context->smarty->assign([
                 'carrier' => $carrier->name,
@@ -89,7 +92,7 @@ class AdminMallhabanaDespachoCarrierController extends ModuleAdminController {
         } catch (PrestaShopException $e) {
             $this->errors[] = $e->getMessage();
         }
-        // }    
+        }    
         parent::postProcess();
 
     }

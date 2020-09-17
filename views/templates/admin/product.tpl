@@ -6,7 +6,8 @@
 			<div class="form-group">
 				<label class="control-label col-lg-3 required">Cantidad</label>
 				<div class="col-lg-9">
-                    <input name="qty" type="number" step="1" class="form-control" required="required" value="{$product->quantity}"/>
+                    <input name="qty" type="number" step="1" class="form-control" required="required" value="{$sa}"/>
+					<i>Cantidad disponible: {$sa}</i>
 				</div>
 			</div>											
 		</div><!-- /.form-wrapper -->						

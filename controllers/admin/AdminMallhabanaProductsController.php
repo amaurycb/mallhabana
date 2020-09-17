@@ -21,9 +21,10 @@ class AdminMallhabanaProductsController extends ModuleAdminController {
         $this->pathToTpl = _PS_MODULE_DIR_ . 'mallhabana/views/templates/admin/product.tpl';
 
 
-        $this->_select = 'pl.name as pname';
+        $this->_select = 'pl.name as pname, sav.quantity as qty';
         $this->_join = '
-		LEFT JOIN `' . _DB_PREFIX_ . 'product_lang` pl ON (a.`id_product` = pl.`id_product` AND pl.`id_lang` = ' . (int) $this->context->language->id . ')';
+        LEFT JOIN `' . _DB_PREFIX_ . 'product_lang` pl ON (a.`id_product` = pl.`id_product` AND pl.`id_lang` = ' . (int) $this->context->language->id . ')
+        LEFT JOIN  '._DB_PREFIX_.'stock_available sav ON (sav.`id_product` = a.`id_product` AND sav.`id_product_attribute` = 0 AND sav.id_shop = 1  AND sav.id_shop_group = 0 )';
         $this->_orderBy = 'id_product';
         $this->_orderWay = 'DESC';
 
@@ -43,8 +44,11 @@ class AdminMallhabanaProductsController extends ModuleAdminController {
             ),
             'pname' => array(
                 'title' => 'Nombre',
+                'filter_key' => 'pl!name',
+                'filter_type' => 'string',
+                'order_key' => 'pname'
             ),
-            'quantity' => array(
+            'qty' => array(
                 'title' => 'Cantidad',
                 'havingFilter' => true,
             ),
@@ -92,10 +96,13 @@ class AdminMallhabanaProductsController extends ModuleAdminController {
     }
 
     public function renderForm () {
-        $product = new Product(Tools::getValue('id_product'));
-      
+        $product = new Product((int)Tools::getValue('id_product'));
+        $sa = Db::getInstance()->executeS('
+        SELECT psa.quantity from  '._DB_PREFIX_.'stock_available psa 
+        where psa.id_product = '.(int)Tools::getValue('id_product'));
         $this->context->smarty->assign([
             'product' => $product,
+            'sa' => !empty($sa[0]['quantity']) ? $sa[0]['quantity'] : 0
         ]);
         $this->content.=$this->context->smarty->fetch($this->pathToTpl);
 
