@@ -399,26 +399,22 @@ class MallHabanaService {
         return Db::getInstance()->executeS($query);
     }
 
-    public function getOrdersByProviders ($supplier, $start, $end) {
+    public function getOrdersByProviders ($supplier, $start, $end, $orders = []) {
+        $condition = count($orders) > 0 ? " OR a.id_order IN (".implode(",",$orders).") " : "";
         $data = Db::getInstance()->executeS('
-        SELECT a.product_quantity_in_stock as available, SUM(a.product_quantity) AS qty, GROUP_CONCAT(CONCAT(a.id_order,"(", a.product_quantity, ")")) as orders, a.product_quantity_in_stock, a.product_id, a.product_name, a.product_reference, MAX(a.id_order_detail) as id_od
+        SELECT sav.quantity as available, SUM(a.product_quantity) AS qty, GROUP_CONCAT(CONCAT(a.id_order,"(", a.product_quantity, ")")) as orders, a.product_quantity_in_stock, a.product_id, a.product_name, a.product_reference, MAX(a.id_order_detail) as id_od
         FROM '._DB_PREFIX_.'order_detail a
         inner JOIN '._DB_PREFIX_.'orders o ON (o.id_order = a.id_order)
         inner JOIN '._DB_PREFIX_.'product p ON (p.id_product = a.product_id)
-        inner JOIN '._DB_PREFIX_.'order_state os ON (os.id_order_state = o.current_state) 
-        WHERE os.id_order_state IN (2,3,4,5) AND p.id_supplier = '.(int)$supplier.' 
-        AND DATE(o.date_add) >= "'.$start.'" AND DATE(o.date_add) <= "'.$end.'" GROUP BY a.product_id ORDER BY a.product_id');
+        inner JOIN '._DB_PREFIX_.'order_state os ON (os.id_order_state = o.current_state)
+        LEFT JOIN  '._DB_PREFIX_.'stock_available sav ON (sav.`id_product` = p.`id_product` AND sav.`id_product_attribute` = 0 AND sav.id_shop = 1  AND sav.id_shop_group = 0 )  
+        WHERE os.id_order_state IN (2,3,4,5) AND ((p.id_supplier = '.(int)$supplier.' 
+        AND DATE(o.date_add) >= "'.$start.'" AND DATE(o.date_add) <= "'.$end.'") '.$condition.') GROUP BY a.product_id ORDER BY a.product_id');
 
         if (count(array_keys($data)) > 0 && array_keys($data)[0] == 'available') {
             $data = [$data];
         }
-        $result = [];
-        foreach ($data as $item) {
-            $stock = Db::getInstance()->executeS('SELECT product_quantity_in_stock as stock from '._DB_PREFIX_.'order_detail where id_order_detail = '. $item['id_od']);
-            $item["available"] = $stock;
-            $result[] = $item;
-        }
-        return $result;
+        return $data;
     }
 
     public function getOrdersByProvidersIDs ($supplier, $start, $end) {        
@@ -439,7 +435,8 @@ class MallHabanaService {
         return $result;      
     }
 
-    public function getOrdersProductsByCarrier ($carrierId, $date) {
+    public function getOrdersProductsByCarrier ($carrierId, $date, $orders = []) {
+        $condition = count($orders) > 0 ? " OR a.id_order IN (".implode(",",$orders).") " : "";
         return Db::getInstance()->executeS('
         SELECT  a.product_name,
                 a.product_quantity,
@@ -450,8 +447,8 @@ class MallHabanaService {
         inner JOIN '._DB_PREFIX_.'orders o ON (o.id_order = a.id_order)
         inner JOIN '._DB_PREFIX_.'order_state os ON (os.id_order_state = o.current_state) 
         inner JOIN '._DB_PREFIX_.'order_carrier oc ON (oc.id_order = a.id_order) 
-        WHERE os.id_order_state IN (2,3,4,5) AND oc.id_carrier = '.(int)$carrierId.' 
-        AND DATE(o.date_add) = "'.$date.'"');
+        WHERE os.id_order_state IN (2,3,4,5) AND ((oc.id_carrier = '.(int)$carrierId.' 
+        AND DATE(o.date_add) = "'.$date.'") '.$condition.')');
     }
 
     public function getProductCustomization ($id_product, $id_cart) {
