@@ -36,14 +36,15 @@ class AdminMallhabanaDespachoCarrierController extends ModuleAdminController {
         $date = Tools::getValue('date_query');
         $carrierId = (int) Tools::getValue('carrier');
         $carrier = new Carrier($carrierId, 1);
-        $ordersIds = !empty(Tools::getValue('orders')) ? explode(",", Tools::getValue('orders')) : [];
-        $intOrders = [];
-        foreach ($ordersIds as $o) {
-            $intOrders[] = (int) $o;
+        $carrierByReference = Db::getInstance()->executeS('SELECT c.id_carrier FROM '._DB_PREFIX_.'carrier c WHERE c.id_reference = '.$carrier->id_reference);
+        $carriersID = [];
+        foreach ($carrierByReference as $c) {
+            $carriersID[] = $c['id_carrier'];
         }
+        $ordersIds = !empty(Tools::getValue('orders')) ? explode(",", Tools::getValue('orders')) : [];
         if (Tools::isSubmit('submitDespachoCarrier')){
         try {
-            $fullProducts = $this->service->getOrdersProductsByCarrier($carrierId, $date, $intOrders);
+            $fullProducts = $this->service->getOrdersProductsByCarrier($carriersID, $date, $ordersIds);
             $products = [];
             $orders = [];
             $customers = [];

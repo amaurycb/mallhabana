@@ -49,8 +49,9 @@ class Mallhabana extends Module {
             $this->registerHook('displayAdminOrder') &&                        
             $this->registerHook('displayPDFSupplyOrderForm') &&
             $this->registerHook('actionAdminOrdersListingFieldsModifier') &&
+            $this->registerHook('displayBackOfficeHeader') &&
             $this->registerHook('actionPaymentConfirmation') &&
-            $this->registerHook('displayBeforeCarrier') && 
+            $this->registerHook('displayBeforeCarrier') &&
             Configuration::updateValue('MALLHABANA', 'Funciones complementarias para MallHabana.com');
     }
 
@@ -374,6 +375,9 @@ class Mallhabana extends Module {
         $this->service->updateOrderOwner($params['id_order']);
     }
 
+    public function hookDisplayBackOfficeHeader() {
+        //$this->context->controller->addJqueryUi('ui.datepicker');
+    }
 
     public function hookDisplayBeforeCarrier ($params) {
         $products = $params['cart']->getProducts(true);

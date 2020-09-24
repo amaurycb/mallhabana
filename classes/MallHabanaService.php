@@ -120,7 +120,7 @@ class MallHabanaService {
         echo implode("\t", array_values()) . "\n";
 
         foreach ($orders as $row) {
-            echo implode("\t", array_values($row)) . "\n";
+            echo utf8_decode(implode("\t", array_values($row))) . "\n";
         }        
         exit();
     }
@@ -135,7 +135,7 @@ class MallHabanaService {
         echo implode("\t", array_values($headers)) . "\n";
 
         foreach ($values as $row) {
-            echo implode("\t", array_values($row)) . "\n";
+            echo utf8_decode(implode("\t", array_values($row))) . "\n";
         }        
         exit();
     }
@@ -264,7 +264,7 @@ class MallHabanaService {
             LEFT JOIN
                 (SELECT GROUP_CONCAT(prstshp_carrier.name) as carrier_name, id_order FROM prstshp_carrier INNER JOIN prstshp_orders ON (prstshp_carrier.id_carrier = prstshp_orders.id_carrier) GROUP BY prstshp_orders.id_order) AS carriers
                 ON (carriers.id_order = o.id_order)
-            WHERE o.current_state in (2,3,4,5)  AND YEAR(o.date_add) = "'.$year.'" AND MONTH(o.date_add) = "'.$month.'"'.$supplierCondition.'
+            WHERE o.current_state in (2,3,4,5,20)  AND YEAR(o.date_add) = "'.$year.'" AND MONTH(o.date_add) = "'.$month.'"'.$supplierCondition.'
             GROUP BY o.id_order';
 
         $result = [];
@@ -437,18 +437,19 @@ class MallHabanaService {
 
     public function getOrdersProductsByCarrier ($carrierId, $date, $orders = []) {
         $condition = count($orders) > 0 ? " OR a.id_order IN (".implode(",",$orders).") " : "";
+        $carriers = implode(',', $carrierId);
         return Db::getInstance()->executeS('
-        SELECT  a.product_name,
-                a.product_quantity,
-                a.product_reference,
-                a.product_id,
-                a.id_order
-        FROM '._DB_PREFIX_.'order_detail a
-        inner JOIN '._DB_PREFIX_.'orders o ON (o.id_order = a.id_order)
-        inner JOIN '._DB_PREFIX_.'order_state os ON (os.id_order_state = o.current_state) 
-        inner JOIN '._DB_PREFIX_.'order_carrier oc ON (oc.id_order = a.id_order) 
-        WHERE os.id_order_state IN (2,3,4,5) AND ((oc.id_carrier = '.(int)$carrierId.' 
-        AND DATE(o.date_add) = "'.$date.'") '.$condition.')');
+                    SELECT  a.product_name,
+                    a.product_quantity,
+                    a.product_reference,
+                    a.product_id,
+                    a.id_order
+            FROM '._DB_PREFIX_.'order_detail a
+            inner JOIN '._DB_PREFIX_.'orders o ON (o.id_order = a.id_order)
+            inner JOIN '._DB_PREFIX_.'order_state os ON (os.id_order_state = o.current_state) 
+            inner JOIN '._DB_PREFIX_.'order_carrier oc ON (oc.id_order = a.id_order) 
+            WHERE os.id_order_state IN (2,3,4,5) AND ((oc.id_carrier IN ('.$carriers.') 
+            AND DATE(o.date_add) = "'.$date.'") '.$condition.')');
     }
 
     public function getProductCustomization ($id_product, $id_cart) {
