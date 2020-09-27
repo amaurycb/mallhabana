@@ -18,6 +18,10 @@ class AdminMallhabanaDespachoController extends ModuleAdminController {
         $this->service = new MallHabanaService();
     }
 
+    /**
+     * La vista prnicipal contiene el listado de proveedores y el rango de fechas.
+     * Opcionalmente puede incluirse los ids de otras órdenes que quien ser incluidas en el reporte
+     */
     public function initContent() {
         parent::initContent();
         $suppliers = $this->service->getSuppliers();
@@ -31,7 +35,7 @@ class AdminMallhabanaDespachoController extends ModuleAdminController {
     } 
 
      /**
-     * Print individual orders
+     * Generar el documento de despaacho
      */
     public function postProcess() {
         $start_date = Tools::getValue('start_date');

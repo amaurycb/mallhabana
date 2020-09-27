@@ -3,7 +3,8 @@
 require_once dirname(__FILE__) . '/../../classes/MallHabanaService.php';
 
 /**
- * Class CubacelBackController
+ * Class AdminMallhabanaPendingController
+ * Generar el excel de las órdenes pendientes de distribucuón
  */
 class AdminMallhabanaPendingController extends ModuleAdminController {
 

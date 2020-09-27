@@ -3,7 +3,8 @@
 require_once dirname(__FILE__) . '/../../classes/MallHabanaService.php';
 
 /**
- * Class CubacelBackController
+ * Class AdminMallhabanaProductsController
+ * Listado simplificado de productos filtrado de acuerdo con el rol del empleado que esté logueado
  */
 class AdminMallhabanaProductsController extends ModuleAdminController {
      public function __construct() {
@@ -64,7 +65,7 @@ class AdminMallhabanaProductsController extends ModuleAdminController {
     }
 
     /**
-     * Print individual orders
+     * Actualizar el valor del stock del producto 
      */
     public function postProcess() {
         if (Tools::isSubmit('submitUpdateQty')){
@@ -95,6 +96,9 @@ class AdminMallhabanaProductsController extends ModuleAdminController {
         return Tools::displayPrice($echo, (int) $order->id_currency);
     }
 
+    /**
+     * Formulario para actualizar el dato del stock del producto.
+     */
     public function renderForm () {
         $product = new Product((int)Tools::getValue('id_product'));
         $sa = Db::getInstance()->executeS('

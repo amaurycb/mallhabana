@@ -1,4 +1,7 @@
 <?php 
+/**
+ * Modelo para acceder al dato de los transportistas de un producto.
+ */
 class ProductCarrier extends ObjectModel {	
     public $id_product;
 	public $id_carrier;

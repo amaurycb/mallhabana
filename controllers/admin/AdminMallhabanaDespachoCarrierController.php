@@ -4,7 +4,8 @@ require_once dirname(__FILE__) . '/../../classes/MallHabanaService.php';
 require_once dirname(__FILE__) . '/../../classes/HTMLTemplateDespachoCarrier.php';
 
 /**
- * Class CubacelBackController
+ * Class AdminMallhabanaDespachoCarrierController
+ * Controlador para generar el despacho por transportistas.
  */
 class AdminMallhabanaDespachoCarrierController extends ModuleAdminController {
 
@@ -17,6 +18,10 @@ class AdminMallhabanaDespachoCarrierController extends ModuleAdminController {
         $this->service = new MallHabanaService();
     }
 
+    /**
+     * La vista prnicipal contiene el listado de transportistas y la fecha.
+     * Opcionalmente puede incluirse los ids de otras órdenes que quien ser incluidas en el reporte
+     */
     public function initContent() {
         parent::initContent();
         $carriers = $this->service->getCarriers();
@@ -30,7 +35,7 @@ class AdminMallhabanaDespachoCarrierController extends ModuleAdminController {
     } 
 
      /**
-     * Print individual orders
+     * Generar el documento de despaacho
      */
     public function postProcess() {
         $date = Tools::getValue('date_query');

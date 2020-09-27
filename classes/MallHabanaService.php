@@ -1,7 +1,7 @@
 <?php
 class MallHabanaService {
     /**
-     * Generate QR code
+     * Generar código QR para las facturas de las órdenes
      *  
      * @param string $text
      * @param boolean $getRaw
@@ -23,7 +23,7 @@ class MallHabanaService {
     }
 
     /**
-     * Generate Barcode
+     *  Generar código de barra para las facturas de las órdenes
      *  
      * @param string $text
      * @param boolean $getRaw
@@ -45,69 +45,10 @@ class MallHabanaService {
     }
 
     /**
-     * Get Destiny info by product id
-     *  
-     * @param int $idProduct
+     * Generar excel de Conciliación con las cabeceras correspondientes
      * 
-     * @return string
-     */
-    public function getDestinyInfo($idProduct){
-        $carriers = (Db::getInstance())->executeS((new DbQuery())
-        ->from('product_carrier', 'pc')
-        ->innerJoin('carrier', 'c', 'c.id_reference = pc.id_carrier_reference')
-        ->where("c.active = 1")
-        ->where("c.deleted = 0")
-        ->where("pc.id_product = ".(int)$idProduct));
-        
-        if (count($carriers) == 0) {
-             $carriers = (Db::getInstance())->executeS((new DbQuery())
-            ->from('carrier', 'c')
-            ->where("c.active = 1")        
-            ->where("c.deleted = 0"));
-        }
-
-        $destiniesAvalilable = $this->getZoneByCarrier($carriers);
-        return implode(', ', $destiniesAvalilable);
-    }
-
-    private function getZoneByCarrier($carriers) {
-        $zones = [];
-        foreach ($carriers as $carrier) {           
-            $zonesAvailables = (Db::getInstance())->executeS((new DbQuery())
-                            ->from('carrier_zone', 'cz')
-                            ->innerJoin('zone', 'z', 'z.id_zone=cz.id_zone')
-                            ->where('cz.id_carrier = ' . (int)$carrier['id_carrier'])
-                            ->where("z.active = 1"));
-
-            if (count($zonesAvailables) > 0) {
-                foreach ($zonesAvailables as $zone) {
-                    $zones[] = $zone['name'];
-                }
-            }
-        }
-        return array_unique($zones);
-    }
-
-     /**
-     * Redirect with messages
-     */
-    public function redirectWithNotifications(array $messages, $url) {
-        $notifications = json_encode($messages);
-
-        if (session_status() == PHP_SESSION_ACTIVE) {
-            $_SESSION['notifications'] = $notifications;
-        } elseif (session_status() == PHP_SESSION_NONE) {
-            session_start();
-            $_SESSION['notifications'] = $notifications;
-        } else {
-            setcookie('notifications', $notifications);
-        }
-
-        return call_user_func_array(array('Tools', 'redirect'), [$url]);
-    }
-
-    /**
-     * Print Conciliation
+     * @param mixed $orders
+     * @return void
      */
     public function excelConciliation ($orders) {
         
@@ -125,6 +66,17 @@ class MallHabanaService {
         exit();
     }
 
+    /**
+     * Generar excel con los pendientes de confirmación.
+     * 
+     * Array con los títulos de las columnas
+     * @param mixed $headers
+     * 
+     * Array con los datos de la conciliación
+     * @param mixed $values
+     * 
+     * @return void
+    */
     public function excel ($headers, $values) {
         $timestamp = time();
         $filename = 'Export_' . $timestamp . '.xls';
@@ -141,7 +93,11 @@ class MallHabanaService {
     }
 
     /**
-     * Get suppliers
+     * Obtener el listado de proveedores para ser mostrados en la vista de Despacho por Proveedor
+     * 
+     * @param mixed $idSupplier
+     * 
+     * @return mixed
      */
     public function getSuppliers($idSupplier = null) {
         $result = [];       
@@ -157,7 +113,9 @@ class MallHabanaService {
     }
 
     /**
-     * Get carrier
+     * Obtener el listado de transportistas para ser mostrados en la vista de Despacho por Transportistas
+     * 
+     * @return mixed
      */
     public function getCarriers() {
         $result = [];
@@ -169,7 +127,9 @@ class MallHabanaService {
     }
 
     /**
-     * Conciliation column titles
+     * Título de las columnas del excel de la conciliación.
+     * 
+     * @return mixed
      */
     public function conciliationHeaders() {
        return  
@@ -192,7 +152,10 @@ class MallHabanaService {
     }
 
     /**
-     * get orders by provider and date
+     * Obtener las órdenes por proveedor, para el excel de la conciliación. 
+     * 
+     * @param mixed $state
+     * @return mixed 
      */
     public function ordersBySate($state) {
         $query = 'SELECT o.reference as reference, 
@@ -217,7 +180,8 @@ class MallHabanaService {
     }
 
     /**
-     * Pending column titles
+     * Título de las columnas del excel de las órdenes pendientes de connfirmación.
+     * @return mixed
      */
     public function pendingHeaders() {
         return  
@@ -231,7 +195,12 @@ class MallHabanaService {
      }
 
      /**
-     * get orders by provider and date
+     * Listado de órdenes por poveedor, mes y año, para exportar el excel.
+     * @param string $month
+     * @param string $year
+     * @param int $supplierId
+     * @return mixed 
+     * 
      */
     public function ordersAllProvidersByDate($month, $year, int $supplierId = null) {
         $supplierCondition = !empty($supplierId) ? " AND s.id_supplier = $supplierId" : "";
@@ -272,6 +241,10 @@ class MallHabanaService {
         $suppliersFull = $this->getSuppliers($supplierId);
         $headers = $this->conciliationHeaders();
 
+        /**
+         * Formatear el arreglo órdenes. 
+         * Insertar cada columna de proveedor a partir de la columna número 10.
+         */
         foreach ($orders as $order) {
             $idOrder = $order['id_order'];
             foreach ($suppliersFull as $key => $supplier) {
@@ -287,6 +260,13 @@ class MallHabanaService {
         return ['orders' => $result, 'headers' => $headers];
     }
 
+    /**
+     * Obtener monto total de una orden por proveedor.
+     * @param int $idOrder
+     * @param int $idSupplier
+     * 
+     * @return string
+     */
     public function getOrderTotalBySupplier ($idOrder, $idSupplier) {
         $query = 'SELECT FORMAT(SUM((od.original_wholesale_price * od.product_quantity)),2) as supplier_total
             FROM prstshp_order_detail AS od
@@ -298,6 +278,12 @@ class MallHabanaService {
         return !empty($data[0]['supplier_total']) ? $data[0]['supplier_total'] : '0.00';
     }
 
+    /**
+     * Obtener el id de la orden 
+     * @param int $id_cart
+     * 
+     * @return mixed
+     */
     public function getOrderByCartId ($id_cart) {
         $query = 'SELECT id_order
                 FROM prstshp_orders AS o
@@ -305,6 +291,15 @@ class MallHabanaService {
         return Db::getInstance()->executeS($query);
     }
 
+    /**
+     * Actualizar el propietario de la orden según los proveedores de los productos que contiene 
+     * Notificar por correo a los propietarios implicados
+     * 
+     * TODO: Notificación email no se envía 
+     * @param int $orderId
+     * 
+     * @return void
+     */
     public function updateOrderOwner($orderId) {
         Db::getInstance()->execute('DELETE FROM prstshp_order_owner WHERE id_order = '.(int)$orderId);
         Db::getInstance()->execute('UPDATE prstshp_orders SET owners = "" WHERE id_order = '.(int)$orderId);
@@ -391,6 +386,11 @@ class MallHabanaService {
 
     }
 
+    /**
+     * Obtener los productos de un propietario
+     * @param int $id_owner
+     * @return mixed
+     */
     public function getProductOwnerByOwner ($id_owner) {
         $query = 'SELECT p.*
                 FROM prstshp_product_owner AS po
@@ -398,6 +398,13 @@ class MallHabanaService {
                 WHERE po.id_owner = '.$id_owner;
         return Db::getInstance()->executeS($query);
     }
+
+    /**
+     * Obtener las órdenes de un proveedor
+     * @param int $supplier
+     * @param int $start
+     * @param int $end
+     */
 
     public function getOrdersByProviders ($supplier, $start, $end, $orders = []) {
         $condition = count($orders) > 0 ? " OR a.id_order IN (".implode(",",$orders).") " : "";
@@ -417,6 +424,12 @@ class MallHabanaService {
         return $data;
     }
 
+    /**
+     * Obtener los IDs de las órdenes de uno proveedor
+     * @param int $supplier
+     * @param int $start
+     * @param int $end
+     */
     public function getOrdersByProvidersIDs ($supplier, $start, $end) {        
         $data = Db::getInstance()->executeS('
         SELECT DISTINCT a.id_order 
@@ -435,6 +448,12 @@ class MallHabanaService {
         return $result;      
     }
 
+     /**
+     * Obtener los datos de los productos de uno o varios transportistas.
+     * @param mixed $carrierId
+     * @param string $date
+     * @param mixed $orders
+     */
     public function getOrdersProductsByCarrier ($carrierId, $date, $orders = []) {
         $condition = count($orders) > 0 ? " OR a.id_order IN (".implode(",",$orders).") " : "";
         $carriers = implode(',', $carrierId);
@@ -452,6 +471,11 @@ class MallHabanaService {
             AND DATE(o.date_add) = "'.$date.'") '.$condition.')');
     }
 
+    /**
+     * Obtener los datos personalización de un producto en un carro de compra.
+     * @param int $id_product
+     * @param int $id_cart
+     */
     public function getProductCustomization ($id_product, $id_cart) {
         return Db::getInstance()->executeS('SELECT cd.value, cfl.name FROM prstshp_customization c
         INNER JOIN prstshp_customized_data cd ON cd.id_customization = c.id_customization
@@ -460,6 +484,13 @@ class MallHabanaService {
         WHERE cfl.id_lang = 1 AND c.id_product = '.(int)$id_product.' AND c.id_cart = '.(int)$id_cart);
     }
 
+    /**
+     * Obtener los datos de la orden según el transportista transportista.
+     * @param int $supplier
+     * @param int $order
+     * 
+     * @return mixed
+     */
     public function getProductsByOrderAndSupplier ($supplier, $order) {        
         $data = Db::getInstance()->executeS('
         SELECT a.* 
@@ -472,6 +503,13 @@ class MallHabanaService {
         return $data;      
     }
 
+    /**
+     * Obtener la zona de entraga según el detalle de address_delivery de la orden.
+     * @param int $idAddressDelivery
+     * 
+     * @return int
+     * 
+     */
     public function getZoneByAddresDelivery ($idAddressDelivery) {
         $data =  Db::getInstance()->executeS('
         SELECT c.id_zone
@@ -481,6 +519,13 @@ class MallHabanaService {
         return isset($data[0]) ? $data[0]['id_zone'] : null;
     }
 
+    /**
+     * Verificar si un producto puede ser llavado a una zona determinada.
+     * @param int $idProduct
+     * @param int $idZone
+     * 
+     * @return boolean
+     */
     public function canDeliveryToThisZone ($idProduct, $idZone) {
         $data =  Db::getInstance()->executeS('
         SELECT c.id_carrier
@@ -488,14 +533,27 @@ class MallHabanaService {
         INNER JOIN '._DB_PREFIX_.'product_carrier pc ON (c.id_reference = pc.id_carrier_reference)
         INNER JOIN '._DB_PREFIX_.'delivery d ON (d.id_carrier = c.id_carrier)
         WHERE pc.id_product = '.(int)$idProduct.' AND d.id_zone = '.(int)$idZone. ' AND c.active = 1 AND c.deleted = 0 ');
-        // var_dump(isset($data[0]['id_carrier']));
         return (isset($data[0]['id_carrier']));
     }
 
+     /**
+     * Verificar si el usuario autenticado puede visualizar la totalidad de contenidos.
+     * Los roles permiditos son: SUPERADMIN, CONTABLE y ADMIN.
+     * @param object $employee
+     * 
+     * @return boolean
+     */
     public function canViewAll($employee) {
-        return in_array((int)$employee->id_profile, [1,7]);
+        return in_array((int)$employee->id_profile, [1,7, 8]);
     }
 
+     /**
+     * Actualizar el stock del producto
+     * @param int $id_product
+     * @param int $int
+     * 
+     * @return void
+     */
     public function updateProductQuantity($id_product, $qty) {
         Db::getInstance()->execute('
             update '._DB_PREFIX_.'stock_available psa 

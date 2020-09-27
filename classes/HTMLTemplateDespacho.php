@@ -10,10 +10,10 @@ class HTMLTemplateDespacho extends HTMLTemplate
 		$this->products = $products;
 		$this->smarty = $smarty;
 
-		// header informations
+		// header info
 		$id_lang = Context::getContext()->language->id;
 		$this->title ='Despacho';
-		// footer informations
+		// footer info
 		$this->shop = new Shop(Context::getContext()->shop->id);
 	}
 

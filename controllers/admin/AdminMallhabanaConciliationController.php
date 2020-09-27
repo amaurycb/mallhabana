@@ -3,7 +3,8 @@
 require_once dirname(__FILE__) . '/../../classes/MallHabanaService.php';
 
 /**
- * Class CubacelBackController
+ * Class AdminMallhabanaConciliationController
+ * Controlador para generar el documento de Conciliación.
  */
 class AdminMallhabanaConciliationController extends ModuleAdminController {
 
@@ -16,6 +17,9 @@ class AdminMallhabanaConciliationController extends ModuleAdminController {
         $this->service = new MallHabanaService();
     }
 
+    /**
+     * La vista prnicipal contiene el listado de proveedores y dos selectores para la fecha de la conciliación
+     */
     public function initContent() {
         parent::initContent();
         $suppliers = $this->service->getSuppliers();
@@ -29,7 +33,9 @@ class AdminMallhabanaConciliationController extends ModuleAdminController {
     } 
 
      /**
-     * Print individual orders
+     * Generar el reporete conciliación basado en el mes y año seleccionados.
+     * Si se selecciona un proveedor en la vista, entonces se genera el reporte para dicho proveedor.
+     * Si se seleccionan "Todos los Proveedores", entonces se genera el reporte con los datos de todos los proveedores.
      */
     public function postProcess() {
         if (Tools::isSubmit('submitConciliation')){

@@ -3,7 +3,9 @@
 require_once dirname(__FILE__) . '/../../classes/MallHabanaService.php';
 
 /**
- * Class CubacelBackController
+ * Class AdminMallhabanaOrdersController
+ * Una vista similar al listado de pedidos original de prestashop.
+ * El objetivo es hacerlo más ligero a la hora de ver las órdenes por el tema de la conexión en Cuba.
  */
 class AdminMallhabanaOrdersController extends ModuleAdminController {
      public function __construct() {
@@ -139,72 +141,6 @@ class AdminMallhabanaOrdersController extends ModuleAdminController {
     }
 
     /**
-     * Bulk action for printing pdf
-     */
-    public function processBulkprintDeliveryNotes(){
-        $orders = $_POST['ordersBox'];
-        return $this->renderPdf($orders);
-    }
-
-    /**
-     * Render pdf
-     */
-    private function renderPdf ($orders) {        
-        $orderCollection = $this->getOrdersForPrint($orders);
-
-        $pdf = new PDF($orderCollection, PDF::TEMPLATE_DELIVERY_SLIP, Context::getContext()->smarty);
-        return $pdf->render(true);
-    }
-
-    /**
-     * Format data for printing document
-     */
-    private function getOrdersForPrint($orders) {
-        $order_invoice_list = Db::getInstance()->executeS('
-            SELECT oi.*
-            FROM `' . _DB_PREFIX_ . 'orders` o 
-            LEFT JOIN `' . _DB_PREFIX_ . 'order_invoice` oi ON (o.`id_order` = oi.`id_order`)
-            WHERE o.id_order IN ('.implode(",", $orders).')
-            ORDER BY oi.delivery_date ASC
-        ');
-
-        return ObjectModel::hydrateCollection('OrderInvoice', $order_invoice_list);
-    }
-
-    /**
-     * Print individual orders
-     */
-    public function postProcess() {
-        if (Tools::getValue('action') == 'printOrder'){
-            try {
-                $idOrder = (int)Tools::getValue('id_order');
-                $orders = Tools::isSubmit('submitBulkprintDeliveryNotesorders') && !empty($_POST['ordersBox']) ? $_POST['ordersBox'] : $idOrder;
-                if( count($orders) > 0) {
-                    $this->updateStatus($orders);
-                    return $this->renderPdf($orders);
-                }
-            } catch (PrestaShopException $e) {
-                $this->errors[] = $e->getMessage();
-            }
-        }      
-        parent::postProcess();
-
-    }
-
-    /**
-     * Update ordes status
-     */
-    private function updateStatus(array $orders) {
-        foreach ($orders as $order) {
-            $objOrder = new Order((int)$order);
-            $history = new OrderHistory();
-            $history->id_order = (int)$objOrder->id;
-            $history->changeIdOrderState(4, (int)($objOrder->id)); //order status=3
-            $history->add();
-        }
-    }
-    
-    /**
      * Disable add button
      */
     public function initToolbar() {
@@ -217,6 +153,9 @@ class AdminMallhabanaOrdersController extends ModuleAdminController {
         return Tools::displayPrice($echo, (int) $order->id_currency);
     }
 
+    /**
+     * Vista simplificada de la orden sin ningún campo de edición para las opciones del pedido.
+     */
     public function renderView () {
         $order = new Order(Tools::getValue('id_order'));
         $customer = new Customer($order->id_customer);
@@ -246,16 +185,17 @@ class AdminMallhabanaOrdersController extends ModuleAdminController {
             'is_admin' => ($this->context->employee->isSuperAdmin() || $this->service->canViewAll($this->context->employee))
         ]);
         $this->content.=$this->context->smarty->fetch($this->pathToTpl);
-
-        //printf("<pre>%s</pre>",print_r(parent::renderView(),true));
         $this->context->smarty->assign([
-           
             'content' => $this->content,
         ]);
         return parent::renderView();
     }
 
-    protected function getProducts($order) {
+    /**
+     * Obtener el listado de los productos de la órden filtrados por los propietarios.
+     * La idea es filtrar el contenido de acuerdo con el rol de quien esté logueado.
+     */
+    private function getProducts($order) {
         $products = $order->getProducts();
         foreach ($products as &$product) {
             if ($product['image'] != null) {
