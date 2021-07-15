@@ -1,0 +1,4 @@
+Bonjour {employee},
+Pour {order_reference}, a été commandé un ou plusieurs de vos produits.
+
+{shop_url}

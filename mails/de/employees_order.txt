@@ -1,0 +1,4 @@
+Guten Tag {employee},
+In der Bestellung {order_reference}, wurde ein, oder mehrere Ihrer Produkte bestellt.
+
+{shop_url}

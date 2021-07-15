@@ -1,0 +1,4 @@
+Hi {employee},
+Some of your product bought in order {order_reference}.
+
+{shop_url}

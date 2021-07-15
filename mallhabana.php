@@ -34,10 +34,6 @@ class Mallhabana extends Module {
         if (Shop::isFeatureActive()) {
             Shop::setContext(Shop::CONTEXT_ALL);
         }
-    
-        // mkdir( _PS_ROOT_DIR_."/img/codes", 777);
-        // mkdir( _PS_ROOT_DIR_."/img/codes/qr", 777);
-        // mkdir( _PS_ROOT_DIR_."/img/codes/barcode", 777);
 
         return parent::install() &&
             $this->registerHook('header') &&
@@ -56,10 +52,6 @@ class Mallhabana extends Module {
     }
 
     public function uninstall() { 
-        // rmdir( _PS_ROOT_DIR_."/img/codes", 777);   
-        // Configuration::deleteByName('NO_STOCK_REDIRECTION');
-        // Configuration::deleteByName('NO_STOCK_MESSAGE');
-        // Configuration::deleteByName('SITE_URL'); 
         return !(!parent::uninstall() || !Configuration::deleteByName('MALLHABANA')) ;
     }
 
@@ -96,21 +88,6 @@ class Mallhabana extends Module {
                 'title' => $this->l('Configuración de MallHabana'),
             ],
             'input' => [
-                // [
-                //     'type' => 'text',
-                //     'label' => $this->l('Redirección Productos sin Stock'),
-                //     'name' => 'MALLHABANA[NO_STOCK_REDIRECTION]',
-                //     'required' => true,
-                //     'cols' => 2,
-                //     'prefix' => '<i class="icon-link"></i>'
-                // ],
-                // [
-                //     'type' => 'text',
-                //     'label' => $this->l('Mensaje Productos sin Stock'),
-                //     'name' => 'MALLHABANA[NO_STOCK_MESSAGE]',
-                //     'required' => true,
-                //     'cols' => 2,
-                // ],  
                 [
                     'type' => 'text',
                     'label' => $this->l('Url base de la tienda'),
@@ -172,6 +149,9 @@ class Mallhabana extends Module {
         $this->context->controller->addJS($this->_path.'views/js/front.js');
     }
 
+    /**
+     * Generar el código de Barra y QR para cada pedido.
+     */
     public function hookActionOrderStatusPostUpdate($params) {
         $this->service->generateQr($params['id_order']);
         $this->service->generateBarcode($params['id_order']);
@@ -212,10 +192,11 @@ class Mallhabana extends Module {
     private function getSmartyVariablesPDF($idOrder) {
         $this->service->generateQr($idOrder);
         $this->service->generateBarcode($idOrder);
+        //'url_code_barcode'  => Configuration::get('SITE_URL').'img/codes/barcode/'.$idOrder.".jpg",
         $this->smarty->assign(
             [
                 'url_code_qr'       => Configuration::get('SITE_URL').'img/codes/qr/'.$idOrder.".jpg",
-                'url_code_barcode'  => Configuration::get('SITE_URL').'img/codes/barcode/'.$idOrder.".jpg",
+                'url_code_barcode'  => Configuration::get('SITE_URL').'img/codes/barcode/'.$idOrder.".png",
                 'id_order'          => $idOrder
             ]
         );
@@ -361,16 +342,22 @@ class Mallhabana extends Module {
         return $tab->delete();
     }
 
+    /**
+     * Eliminar columnas innecesarias en el litsado de pedidos
+     */
     public function hookActionAdminOrdersListingFieldsModifier($params) {
-        $params['fields']['total_shipping'] = array(
+        /*$params['fields']['total_shipping'] = array(
             'title' => $this->l('Transportación'),
             'align' => 'center',
-        );     
+        );*/     
         unset($params['fields']['new']);
         unset($params['fields']['pdf']);
 
     }
 
+    /**
+     * Luego de la confirmación del pago, se actualiza el propietario de la orden.
+     */
     public function hookActionPaymentConfirmation($params) {
         $this->service->updateOrderOwner($params['id_order']);
     }
@@ -379,6 +366,9 @@ class Mallhabana extends Module {
         //$this->context->controller->addJqueryUi('ui.datepicker');
     }
 
+    /**
+     * No mostrar el dato de la distribución, si existe un producto cuyo transportista no llega a la provincia del pedido
+     */
     public function hookDisplayBeforeCarrier ($params) {
         $products = $params['cart']->getProducts(true);
         $zona = $this->service->getZoneByAddresDelivery($params['cart']->id_address_delivery);
@@ -391,6 +381,7 @@ class Mallhabana extends Module {
                 }
             }
         } 
+        //TODO: Poner en una vista.
         echo '<input type="hidden" id="mallhabana_can_delivery" value="'. ((count($products) === $canDelivery) ? 1 : 0) . '"> 
         <script>
         document.ready(function(){

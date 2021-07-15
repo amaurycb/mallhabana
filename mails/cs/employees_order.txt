@@ -1,0 +1,4 @@
+Dobrý den {employee},
+V objednávce {order_reference} byl objednán jeden nebo více vašich produktů.
+
+{shop_url}

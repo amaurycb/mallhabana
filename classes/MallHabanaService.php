@@ -9,16 +9,36 @@ class MallHabanaService {
      * @return mixed
      */
     public function generateQr($text, $getRaw = false){
-        $url = "https://chart.googleapis.com/chart?chs=250x250&cht=qr&chl=".$text."&choe=UTF-8";
+        clearstatcache();
+      
         $img = $_SERVER['DOCUMENT_ROOT']."/img/codes/qr/".$text.".jpg";
-        $raw = file_get_contents($url);
-        if (!file_exists($img)){ 
+        ////$url = "https://chart.googleapis.com/chart?chs=250x250&cht=qr&chl=".$text."&choe=UTF-8";
+        ////$raw = file_get_contents($url);
+
+
+        $sizeQRcode = -1;                   
+        $existFileQRcode = is_file($img) && file_exists($img);
+        
+        if($existFileQRcode)
+         $sizeQRcode = filesize($img); 
+
+        $validFileQRCode = $existFileQRcode && $sizeQRcode>'0' ? true : false;   
+
+        $logger = new FileLogger(0);
+        $urlLog = _PS_ROOT_DIR_."/log/despachoCarrierFixed.log";
+        $logger->setFilename($urlLog);
+                     
+        if (!$validFileQRCode){ 
+           $url = "https://chart.googleapis.com/chart?chs=250x250&cht=qr&chl=".$text."&choe=UTF-8";
+           $raw = file_get_contents($url);
+           ////if (!file_exists($img)){ 
             if ($getRaw) {
-                return $raw;
+                return $raw;  
             } else {
-                file_put_contents($img, $raw);  
+                file_put_contents($img, $raw); 
+                $logger->logDebug("Codigo QR orden: ". $text." generado OK");   
             }    
-        }       
+        }      
         return true;
     }
 
@@ -31,16 +51,47 @@ class MallHabanaService {
      * @return mixed
      */
     public function generateBarcode($text, $getRaw = false){
-        $url = "http://barcodes4.me/barcode/c39/".$text.".jpg";
-        $img = $_SERVER['DOCUMENT_ROOT']."/img/codes/barcode/".$text.".jpg";
-        if (!file_exists($img)){ 
+        clearstatcache();
+        //$barcodeobj = new TCPDFBarcode($text, 'C39');
+        $barcodeobj = new TCPDFBarcode($text, 'C128');
+        // Assign to template
+        // All other unnecessary variables not displayed      
+        $barcode = $barcodeobj->getBarcodePngData(2, 40, array(0,0,0));
+
+        ////$url = "http://barcodes4.me/barcode/c39/".$text.".jpg";
+        //$img = $_SERVER['DOCUMENT_ROOT']."/img/codes/barcode/".$text.".jpg";
+        $img = $_SERVER['DOCUMENT_ROOT']."/img/codes/barcode/".$text.".png";
+        /*if (!file_exists($img)){ 
             $raw = file_get_contents($url);
             if ($getRaw) {
                 return $raw;
             } else {           
                 file_put_contents($img, $raw);  
             } 
-        }
+        }*/
+
+        $sizeBARcode = -1;                   
+        $existFileBARcode = is_file($img) && file_exists($img);
+        if($existFileBARcode)
+           $sizeBARcode = filesize($img); 
+      
+        $validFileBARCode = $existFileBARcode && $sizeBARcode>'0' ? true : false;      
+
+        $logger = new FileLogger(0);
+        $urlLog = _PS_ROOT_DIR_."/log/despachoCarrierFixed.log";
+        $logger->setFilename($urlLog);
+          
+        if (!$validFileBARCode){          
+            ////if (!file_exists($img)){ 
+            $raw = $barcode;
+            if ($getRaw) {
+                return $raw;
+            } else {              
+                file_put_contents($img, $barcode);  
+            } 
+        } 
+
+
         return true;
     }
 
@@ -87,7 +138,8 @@ class MallHabanaService {
         echo implode("\t", array_values($headers)) . "\n";
 
         foreach ($values as $row) {
-            echo utf8_decode(implode("\t", array_values($row))) . "\n";
+            echo implode("\t", array_values($row)) . "\n";
+            //echo utf8_decode(implode("\t", array_values($row))) . "\n";
         }        
         exit();
     }
@@ -150,6 +202,31 @@ class MallHabanaService {
         'currency' => 'Moneda',
         'rate' => 'Cambio'];
     }
+
+    /**
+     * ConciliationAccounting column titles
+     */
+    public function conciliationAccountingHeaders() {
+        return  
+        ['id_order' => 'Id Order',
+         'reference' => 'Referencia',
+         'state_name' => 'Estado',
+         'payment' => 'Método de pago',
+         'municipio' => 'Municipio',
+         'client' => 'Cliente',
+         'destiny' => 'Destinatario',
+         'created_at' => 'Creado el',
+         'aproved' => 'Aprobado el',
+         'paid' => 'Total pagado',    
+         'precio_costo_total' => 'Precio Costo Total',     
+         'paid_without_shipping' => 'Precio Venta Total',        
+         'carrier_name' => 'Transportista',
+         'shipping' => 'Total Transportación',
+         'embalaje' => 'Embalaje',
+         'gain' => 'Utilidad',
+         'currency' => 'Moneda',
+         'rate' => 'Cambio'];
+     }
 
     /**
      * Obtener las órdenes por proveedor, para el excel de la conciliación. 
@@ -260,6 +337,102 @@ class MallHabanaService {
         return ['orders' => $result, 'headers' => $headers];
     }
 
+
+     //Custom Bradis
+     /**
+     * get orders by providerAccounting and date
+     */
+    public function ordersAllProvidersAccountingByDate($month, $year, int $supplierId = null) {
+        $supplierCondition = !empty($supplierId) ? " AND s.id_supplier = $supplierId" : "";
+        $query = 'SELECT o.id_order as id_order, 
+                    o.reference as reference,
+                    osl.name as state_name,
+                    o.payment,
+                    st.name as municipio,
+                    CONCAT (c.firstname, " ", c.lastname) as client,
+                    CONCAT (a.firstname, " ", a.lastname) as destiny,
+                    o.date_add as created_at,
+                    oh.date_add as aproved,  
+                    FORMAT(o.total_paid,2) AS paid,                  
+                    FORMAT(o.total_products,2) AS PrecioVentaTotal,                    
+                    carriers.carrier_name,
+                    FORMAT(o.total_shipping, 2) as shipping,
+                    "Pendiente" as embalaje,
+                    FORMAT(o.total_paid - SUM(od.total_price_tax_excl) - o.total_shipping, 2) as gain,
+                    cu.iso_code as currency,
+                    FORMAT(o.conversion_rate, 2) AS rate 
+            FROM prstshp_order_detail AS od
+            INNER JOIN prstshp_orders AS o ON (o.id_order = od.id_order)
+            INNER JOIN prstshp_order_state_lang osl ON (osl.id_order_state = o.current_state AND osl.id_lang = 1  ) 
+            INNER JOIN prstshp_customer c ON (c.id_customer = o.id_customer) 
+            INNER JOIN prstshp_address a ON (a.id_address = o.id_address_delivery) 
+            INNER JOIN prstshp_state st ON (a.id_state = st.id_state) 
+            LEFT JOIN prstshp_order_history AS oh ON (oh.id_order = o.id_order AND oh.id_order_state = 2)
+            LEFT JOIN prstshp_currency AS cu ON (cu.id_currency = o.id_currency)
+            LEFT JOIN prstshp_product AS p ON (p.id_product = od.product_id)
+            LEFT JOIN prstshp_supplier AS s ON (s.id_supplier = p.id_supplier)
+            LEFT JOIN
+                (SELECT GROUP_CONCAT(prstshp_carrier.name) as carrier_name, id_order FROM prstshp_carrier INNER JOIN prstshp_orders ON (prstshp_carrier.id_carrier = prstshp_orders.id_carrier) GROUP BY prstshp_orders.id_order) AS carriers
+                ON (carriers.id_order = o.id_order)
+            WHERE o.current_state in (2,3,4,5)  AND YEAR(o.date_add) = "'.$year.'" AND MONTH(o.date_add) = "'.$month.'"'.$supplierCondition.'
+            GROUP BY o.id_order';
+
+        $result = [];
+        $orders = Db::getInstance()->executeS($query);
+        $suppliersFull = $this->getSuppliers($supplierId);
+        $headers = $this->conciliationAccountingHeaders();
+          
+        foreach ($orders as $order) {
+            $totalPriceCost = 0;
+            /*foreach ($order->getProducts() as $product) {
+                //$totalPriceCost+= $product->
+                $temp_product = $product;
+            }*/
+             
+
+            $idOrder = $order['id_order'];
+            //$order['totalPriceCost'] = $this->getOrderTotalPriceCost( $idOrder);
+          
+            $order = array_merge(
+                array_slice($order, 0, 10),
+                ['totalPriceCost' => $this->getOrderTotalPriceCost( $idOrder)], 
+                array_slice($order, 10));
+
+            //$stop = 0;
+            foreach ($suppliersFull as $key => $supplier) {
+                //$stop++;
+                if (!empty($supplier->id)) {
+                    //$arraySliceOrder = array_slice($order, 0, 12);
+                    //$arraySliceOrder2 = array_slice($order, 12);
+                    $order = array_merge(
+                        array_slice($order, 0, 12),
+                        ['supplier_total'.$key  => $this->getOrderTotalBySupplier( $idOrder, $supplier->id)
+                        ], array_slice($order, 12));
+                  
+                    $headers = array_merge(
+                        array_slice($headers, 0, 12), 
+                        ['spc'.$key => $supplier->name.'(PrecioCoste)'],
+                        array_slice($headers, 12));
+                        
+                    //Custom Brakus
+                   $order = array_merge(
+                        array_slice($order, 0, 12),
+                        ['supplier_total_sell'.$key  => $this->getOrderTotalBySupplierSell( $idOrder, $supplier->id)
+                        ], array_slice($order, 12));
+                    $headers = array_merge(
+                        array_slice($headers, 0, 12), 
+                        ['spv'.$key => $supplier->name.'(PrecioVenta)'],
+                        array_slice($headers, 12));
+                    
+                }
+                /*if ($stop==30)
+                break;*/
+            }
+            $result[] = $order;
+        }
+        return ['orders' => $result, 'headers' => $headers];
+    }
+
     /**
      * Obtener monto total de una orden por proveedor.
      * @param int $idOrder
@@ -276,6 +449,28 @@ class MallHabanaService {
             WHERE od.id_order = '.$idOrder;
         $data = Db::getInstance()->executeS($query);
         return !empty($data[0]['supplier_total']) ? $data[0]['supplier_total'] : '0.00';
+    }
+
+    //Custom Bradis
+    public function getOrderTotalBySupplierSell ($idOrder, $idSupplier) {
+        $query = 'SELECT FORMAT(SUM((od.original_product_price * od.product_quantity)),2) as supplier_total
+            FROM prstshp_order_detail AS od
+            INNER JOIN prstshp_orders AS o ON (o.id_order = od.id_order) 
+            INNER JOIN prstshp_product AS p ON (p.id_product = od.product_id)
+            INNER JOIN prstshp_supplier AS s ON (s.id_supplier = p.id_supplier AND s.id_supplier = '.$idSupplier.')
+            WHERE od.id_order = '.$idOrder;
+        $data = Db::getInstance()->executeS($query);
+        return !empty($data[0]['supplier_total']) ? $data[0]['supplier_total'] : '0.00';
+    }
+
+    public function getOrderTotalPriceCost ($idOrder) {
+        $query = 'SELECT FORMAT(SUM((od.original_wholesale_price * od.product_quantity)),2) as total_price_cost
+            FROM prstshp_order_detail AS od
+            INNER JOIN prstshp_orders AS o ON (o.id_order = od.id_order) 
+            INNER JOIN prstshp_product AS p ON (p.id_product = od.product_id)          
+            WHERE od.id_order = '.$idOrder;
+        $data = Db::getInstance()->executeS($query);
+        return !empty($data[0]['total_price_cost']) ? $data[0]['total_price_cost'] : '0.00';
     }
 
     /**
@@ -363,25 +558,26 @@ class MallHabanaService {
                 }
             }
             $product_list_html = '';
-            if (count($product_list) > 0)
-                $product_list_html = '<h3>Orden: '. $order->id_order.'</h3></br><table style="width:100%"><tr><th style="width:25%;border-bottom:1px solid #d6d4d4;">Referencia</th><th style="width:55%;border-bottom:1px solid #d6d4d4;">Productos</th><th style="width:20%;border-bottom:1px solid #d6d4d4;">Costo</th><th style="width:20%;border-bottom:1px solid #d6d4d4;">Total</th></tr>'.implode('', $product_list).'</table>';
-            $mailParams = array(
-                '{products}' => $product_list_html,
-                '{employee}' => $employee->firstname.' '.$employee->lastname,
-                '{customer_name}' => ' ',
-                '{customer_mail}' => "",
-                '{order_reference}' => $order->id_order
-            );
-            if($product_list_html != '')
-                Mail::Send(
-                    (int)$order->id_lang,
-                    'employees_order',
-                    sprintf(Mail::l('Productos de la orden %s', (int)$order->id_lang), $order->id_order),
-                    $mailParams,
-                    $employee->email,
-                    $employee->firstname.' '.$employee->lastname,
-                    null, null, null, null, dirname(__FILE__).'/views/mails/', false, (int)$order->id_shop
-            );
+            //TODO: uncomment and fix send email funcionality
+            // if (count($product_list) > 0)
+            //     $product_list_html = '<h3>Orden: '. $order->id_order.'</h3></br><table style="width:100%"><tr><th style="width:25%;border-bottom:1px solid #d6d4d4;">Referencia</th><th style="width:55%;border-bottom:1px solid #d6d4d4;">Productos</th><th style="width:20%;border-bottom:1px solid #d6d4d4;">Costo</th><th style="width:20%;border-bottom:1px solid #d6d4d4;">Total</th></tr>'.implode('', $product_list).'</table>';
+            // $mailParams = array(
+            //     '{products}' => $product_list_html,
+            //     '{employee}' => $employee->firstname.' '.$employee->lastname,
+            //     '{customer_name}' => ' ',
+            //     '{customer_mail}' => "",
+            //     '{order_reference}' => $order->id_order
+            // );
+            // if($product_list_html != '')
+            //     Mail::Send(
+            //         (int)$order->id_lang,
+            //         'employees_order',
+            //         sprintf(Mail::l('Productos de la orden %s', (int)$order->id_lang), $order->id_order),
+            //         $mailParams,
+            //         $employee->email,
+            //         $employee->firstname.' '.$employee->lastname,
+            //         null, null, null, null, dirname(__FILE__).'/views/mails/', false, (int)$order->id_shop
+            // );
         }
 
     }
@@ -407,16 +603,20 @@ class MallHabanaService {
      */
 
     public function getOrdersByProviders ($supplier, $start, $end, $orders = []) {
-        $condition = count($orders) > 0 ? " OR a.id_order IN (".implode(",",$orders).") " : "";
+        $condition = count($orders) > 0 ? " AND a.id_order IN (".implode(",",$orders).") " : "";
+        $dates = (!empty($start) && !empty($end)) ? ' AND DATE(o.date_add) >= "'.$start.'" AND DATE(o.date_add) <= "'.$end.'" ' : "";
+
+        $sqlIncreaseGroupConcatLimit ="SET SESSION group_concat_max_len = 1000000";
+        $executed = Db::getInstance()->executeS($sqlIncreaseGroupConcatLimit);
+
         $data = Db::getInstance()->executeS('
-        SELECT sav.quantity as available, SUM(a.product_quantity) AS qty, GROUP_CONCAT(CONCAT(a.id_order,"(", a.product_quantity, ")")) as orders, a.product_quantity_in_stock, a.product_id, a.product_name, a.product_reference, MAX(a.id_order_detail) as id_od
+        SELECT sav.quantity as available, SUM(a.product_quantity) AS qty, GROUP_CONCAT(CONCAT(a.id_order,"(", a.product_quantity, ")")) as orders, a.product_quantity_in_stock, a.product_id, a.product_name, a.product_reference, a.original_wholesale_price, MAX(a.id_order_detail) as id_od
         FROM '._DB_PREFIX_.'order_detail a
         inner JOIN '._DB_PREFIX_.'orders o ON (o.id_order = a.id_order)
         inner JOIN '._DB_PREFIX_.'product p ON (p.id_product = a.product_id)
         inner JOIN '._DB_PREFIX_.'order_state os ON (os.id_order_state = o.current_state)
         LEFT JOIN  '._DB_PREFIX_.'stock_available sav ON (sav.`id_product` = p.`id_product` AND sav.`id_product_attribute` = 0 AND sav.id_shop = 1  AND sav.id_shop_group = 0 )  
-        WHERE os.id_order_state IN (2,3,4,5) AND ((p.id_supplier = '.(int)$supplier.' 
-        AND DATE(o.date_add) >= "'.$start.'" AND DATE(o.date_add) <= "'.$end.'") '.$condition.') GROUP BY a.product_id ORDER BY a.product_id');
+        WHERE os.id_order_state IN (2,3,4,5) AND ((p.id_supplier = '.(int)$supplier.$dates.') '.$condition.') GROUP BY a.product_id ORDER BY a.product_id');
 
         if (count(array_keys($data)) > 0 && array_keys($data)[0] == 'available') {
             $data = [$data];
@@ -462,7 +662,8 @@ class MallHabanaService {
                     a.product_quantity,
                     a.product_reference,
                     a.product_id,
-                    a.id_order
+                    a.id_order,
+                    o.invoice_date
             FROM '._DB_PREFIX_.'order_detail a
             inner JOIN '._DB_PREFIX_.'orders o ON (o.id_order = a.id_order)
             inner JOIN '._DB_PREFIX_.'order_state os ON (os.id_order_state = o.current_state) 

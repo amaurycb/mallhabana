@@ -48,15 +48,15 @@ class AdminMallhabanaDespachoController extends ModuleAdminController {
         }
         $data = $this->service->getOrdersByProviders($supplier, $start_date, $end_date, $intOrders);
         $ordersIds = $this->service->getOrdersByProvidersIDs($supplier, $start_date, $end_date);
-        $orders = array_merge($ordersIds, $intOrders);
+        $fullOrders = array_merge($ordersIds, $intOrders);
         $supplier = new Supplier($supplier, 1);
 
         if (Tools::isSubmit('submitDespacho')){
            try {  
                 $this->context->smarty->assign([
                     'provider' => $supplier->name,
-                    'genDate' =>  "Desde ".  $start_date." hasta ". $end_date,
-                    'orders' =>  implode(", ", $orders)
+                    'genDate' =>  (!empty( $start_date) && !empty($end_date)) ? "Desde ".  $start_date." hasta ". $end_date : "",
+                    'orders' =>  implode(", ", $fullOrders)
                 ]);
 
                 $pdf = new PDF($data, 'Despacho', Context::getContext()->smarty);
@@ -71,7 +71,7 @@ class AdminMallhabanaDespachoController extends ModuleAdminController {
                 $products = [];
                 $orders = [];
                 $customers = [];     
-                foreach ($ordersIds as $oId) {    
+                foreach ($fullOrders as $oId) {    
                     $totalOrder = 0;    
                     $fullProducts = $this->service->getProductsByOrderAndSupplier($supplier->id, $oId);         
                     $order = new Order($oId,1);
@@ -98,7 +98,7 @@ class AdminMallhabanaDespachoController extends ModuleAdminController {
                         'phone' => $address->phone,
                         'address' => $address->address1. ", Entre: ". $address->address2. ", ". $address->city. ", ". $state->name. ", ". $country->name,
                         'url_code_qr'       => Configuration::get('SITE_URL').'img/codes/qr/'.$oId.".jpg",
-                        'url_code_barcode'  => Configuration::get('SITE_URL').'img/codes/barcode/'.$oId.".jpg",
+                        'url_code_barcode'  => Configuration::get('SITE_URL').'img/codes/barcode/'.$oId.".png",
                         'id_order'          => $oId,
                         'totalOrder'        => $totalOrder
                     ];       

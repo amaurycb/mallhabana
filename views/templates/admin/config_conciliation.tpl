@@ -1,5 +1,5 @@
 <form id="configuration_form" class="defaultForm form-horizontal mallhabana" action="" method="post" enctype="multipart/form-data" novalidate="">
-	<input type="hidden" name="submitConciliation" value="1">
+	<!--<input type="hidden" name="submitConciliation" value="1">-->
 	<div class="panel" id="fieldset_0">
 		<div class="panel-heading">
 			Parámetros para el reporte de conciliación
@@ -48,8 +48,12 @@
 		</div><!-- /.form-wrapper -->						
 					
 		<div class="panel-footer">
+           	<button type="submit" value="1" id="configuration_form_submit_btn_accounting" name="submitAccounting" class="btn btn-default pull-right">
+				<i class="process-icon-download"></i> Generar Contabilidad
+			</button>
+
 			<button type="submit" value="1" id="configuration_form_submit_btn" name="submitConciliation" class="btn btn-default pull-right">
-				<i class="process-icon-download"></i> Generar
+				<i class="process-icon-download"></i> Generar Conciliación
 			</button>					
 		</div>
 	</div>

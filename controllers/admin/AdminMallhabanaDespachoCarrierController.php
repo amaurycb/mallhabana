@@ -53,6 +53,13 @@ class AdminMallhabanaDespachoCarrierController extends ModuleAdminController {
             $products = [];
             $orders = [];
             $customers = [];
+
+            $logger = new FileLogger(0);
+            $urlLog = _PS_ROOT_DIR_."/log/despachoCarrierFixed.log";
+            $logger->setFilename($urlLog);
+            $logger->logDebug("Init creando despacho transportista ");
+
+
             foreach ($fullProducts as $p) {
                 $order = new Order($p['id_order'],1);
                 $orders[$p['id_order']] = [$order];
@@ -78,10 +85,64 @@ class AdminMallhabanaDespachoCarrierController extends ModuleAdminController {
                     'ci' => $address->dni,
                     'address' => $address->address1. ", Entre: ". $address->address2. ", ". $address->city. ", ". $state->name. ", ". $country->name,
                     'url_code_qr'       => Configuration::get('SITE_URL').'img/codes/qr/'.$p['id_order'].".jpg",
-                    'url_code_barcode'  => Configuration::get('SITE_URL').'img/codes/barcode/'.$p['id_order'].".jpg",
-                    'id_order'          => $p['id_order']
+                    'url_code_barcode'  => Configuration::get('SITE_URL').'img/codes/barcode/'.$p['id_order'].".png",
+                    'id_order'          => $p['id_order'],
+					'alternative'       => $address->other,
+                    'alternative_phone' => $address->phone_mobile
+
+
                 ];
+                
+           
+                 ###               
+                 ////clearstatcache();
+                 ////$orderBarCodeImage = $_SERVER['DOCUMENT_ROOT']."/img/codes/barcode/".$p['id_order'].".png";
+                 //$existe = file_exists("/home/brakus/www/mallhabana/httpdocs/img/codes/barcode/173583.png");
+
+                 //$existe2 = is_file($orderBarCodeImage) && file_exists($orderBarCodeImage);
+                 //$isRedeable = is_readable($orderBarCodeImage);
+                 ////if (!file_exists($orderBarCodeImage)){ 
+                     ////$logger->logDebug("Codigo barra orden: ". $p['id_order']." no encontrado");                    
+                     try {
+
+                        $this->service->generateBarcode($p['id_order']);
+                        /*$barCodeGenerated = $this->service->generateBarcode($p['id_order']);
+                        if($barCodeGenerated)
+                          $logger->logDebug("Codigo barra orden: ". $p['id_order']." generado OK"); 
+                        else
+                          $logger->logDebug("Codigo barra orden: ". $p['id_order']." generado KO");*/
+                           
+                     } catch (PrestaShopException $e) {
+                         //$this->errors[] = $e->getMessage();                  
+                         $logger->logDebug("error ". $e->getMessage());
+                     }
+ 
+                 ////} 
+
+                 
+                 ////$orderQrCodeImage = $_SERVER['DOCUMENT_ROOT'].'/img/codes/qr/'.$p['id_order'].".jpg";
+                 ////if (!file_exists($orderQrCodeImage)){ 
+                     ////$logger->logDebug("Codigo QR orden: ". $p['id_order']." no encontrado");                    
+                     try {
+
+                        $this->service->generateQr($p['id_order']);
+                        /*$qrCodeGenerated = $this->service->generateQr($p['id_order']);
+                        if($qrCodeGenerated)
+                          $logger->logDebug("Codigo QR orden: ". $p['id_order']." generado OK"); 
+                        else                          
+                         $logger->logDebug("Codigo QR orden: ". $p['id_order']." generado KO");*/ 
+                            
+                     } catch (PrestaShopException $e) {
+                         //$this->errors[] = $e->getMessage();
+                         $logger->logDebug("error ". $e->getMessage());
+                     }
+ 
+                 ////} 
+                 ###
+
+
             } 
+            $logger->logDebug("End creando despacho carrier ");
 
             $this->context->smarty->assign([
                 'carrier' => $carrier->name,
