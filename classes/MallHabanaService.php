@@ -602,7 +602,7 @@ class MallHabanaService {
      * @param int $end
      */
 
-    public function getOrdersByProviders ($supplier, $start, $end, $orders = []) {
+    public function getOrdersByProviders ($supplier, $start, $end, $orders = [], $carrier) {
         $condition = count($orders) > 0 ? " AND a.id_order IN (".implode(",",$orders).") " : "";
         $dates = (!empty($start) && !empty($end)) ? ' AND DATE(o.date_add) >= "'.$start.'" AND DATE(o.date_add) <= "'.$end.'" ' : "";
 
@@ -612,7 +612,7 @@ class MallHabanaService {
         $data = Db::getInstance()->executeS('
         SELECT sav.quantity as available, SUM(a.product_quantity) AS qty, GROUP_CONCAT(CONCAT(a.id_order,"(", a.product_quantity, ")")) as orders, a.product_quantity_in_stock, a.product_id, a.product_name, a.product_reference, a.original_wholesale_price, MAX(a.id_order_detail) as id_od
         FROM '._DB_PREFIX_.'order_detail a
-        inner JOIN '._DB_PREFIX_.'orders o ON (o.id_order = a.id_order)
+        inner JOIN '._DB_PREFIX_.'orders o ON (o.id_order = a.id_order and o.id_carrier = '.$carrier.')
         inner JOIN '._DB_PREFIX_.'product p ON (p.id_product = a.product_id)
         inner JOIN '._DB_PREFIX_.'order_state os ON (os.id_order_state = o.current_state)
         LEFT JOIN  '._DB_PREFIX_.'stock_available sav ON (sav.`id_product` = p.`id_product` AND sav.`id_product_attribute` = 0 AND sav.id_shop = 1  AND sav.id_shop_group = 0 )  
@@ -634,7 +634,7 @@ class MallHabanaService {
         $data = Db::getInstance()->executeS('
         SELECT DISTINCT a.id_order 
         FROM '._DB_PREFIX_.'order_detail a
-        inner JOIN '._DB_PREFIX_.'orders o ON (o.id_order = a.id_order)
+        inner JOIN '._DB_PREFIX_.'orders o ON (o.id_order = a.id_order and o.id_carrier = '.$carrier.')
         inner JOIN '._DB_PREFIX_.'product p ON (p.id_product = a.product_id)
         inner JOIN '._DB_PREFIX_.'order_state os ON (os.id_order_state = o.current_state) 
         WHERE os.id_order_state IN (2,3,4,5) AND p.id_supplier = '.(int)$supplier.' 

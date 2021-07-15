@@ -41,12 +41,13 @@ class AdminMallhabanaDespachoController extends ModuleAdminController {
         $start_date = Tools::getValue('start_date');
         $end_date = Tools::getValue('end_date');
         $supplier = (int) Tools::getValue('provider');
+        $carrier = (int) Tools::getValue('carrier');
         $orders = !empty(Tools::getValue('orders')) ? explode(",", Tools::getValue('orders')) : [];
         $intOrders = [];
         foreach ($orders as $o) {
             $intOrders[] = (int) $o;
         }
-        $data = $this->service->getOrdersByProviders($supplier, $start_date, $end_date, $intOrders);
+        $data = $this->service->getOrdersByProviders($supplier, $start_date, $end_date, $intOrders, $carrier);
         $ordersIds = $this->service->getOrdersByProvidersIDs($supplier, $start_date, $end_date);
         $fullOrders = array_merge($ordersIds, $intOrders);
         $supplier = new Supplier($supplier, 1);
