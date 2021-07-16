@@ -630,7 +630,7 @@ class MallHabanaService {
      * @param int $start
      * @param int $end
      */
-    public function getOrdersByProvidersIDs ($supplier, $start, $end) {        
+    public function getOrdersByProvidersIDs ($supplier, $start, $end, $carrier) {        
         $data = Db::getInstance()->executeS('
         SELECT DISTINCT a.id_order 
         FROM '._DB_PREFIX_.'order_detail a

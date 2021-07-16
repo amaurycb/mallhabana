@@ -16,6 +16,16 @@
 				</div>
 			</div>
 			<div class="form-group">
+				<label class="control-label col-lg-3 required">Transportista</label>
+				<div class="col-lg-9">
+					<select name="carrier" required="required">
+						{foreach $carriers as $carrier}
+							<option value="{$carrier->id}">{$carrier->name}</option>
+						{/foreach}
+					</select>
+				</div>
+			</div>
+			<div class="form-group">
 				<label class="control-label col-lg-3 ">Orders IDs</label>
 				<div class="col-lg-9">
 					<input type="text" class="" name="orders">

@@ -25,8 +25,10 @@ class AdminMallhabanaDespachoController extends ModuleAdminController {
     public function initContent() {
         parent::initContent();
         $suppliers = $this->service->getSuppliers();
+        $carriers = $this->service->getCarriers();
         $this->context->smarty->assign([
-            'suppliers' => $suppliers
+            'suppliers' => $suppliers,
+            'carriers' => $carriers
         ]);
         $this->content.=$this->context->smarty->fetch($this->pathToTpl);
         $this->context->smarty->assign([
@@ -48,7 +50,7 @@ class AdminMallhabanaDespachoController extends ModuleAdminController {
             $intOrders[] = (int) $o;
         }
         $data = $this->service->getOrdersByProviders($supplier, $start_date, $end_date, $intOrders, $carrier);
-        $ordersIds = $this->service->getOrdersByProvidersIDs($supplier, $start_date, $end_date);
+        $ordersIds = $this->service->getOrdersByProvidersIDs($supplier, $start_date, $end_date, $carrier);
         $fullOrders = array_merge($ordersIds, $intOrders);
         $supplier = new Supplier($supplier, 1);
 
