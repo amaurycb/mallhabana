@@ -21,6 +21,7 @@ td {
  <h3>Fecha: <i>{$genDate}</i></h3>
  <h3>Generado el: <i>{date('Y-m-d')}</i></h3>
  <h3>Proveedor: <i>{$provider}</i></h3>
+ <h3>Transportista: <i>{$carrier}</i></h3>
  <h3>Órdenes: <i>{$orders}</i></h3>
   <table width="100%" cellpadding="1" cellspacing="0" style="border-collapse: collapse;border-spacing: 0px;">
     

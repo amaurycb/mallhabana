@@ -44,6 +44,7 @@ class AdminMallhabanaDespachoController extends ModuleAdminController {
         $end_date = Tools::getValue('end_date');
         $supplier = (int) Tools::getValue('provider');
         $carrier = (int) Tools::getValue('carrier');
+        
         $orders = !empty(Tools::getValue('orders')) ? explode(",", Tools::getValue('orders')) : [];
         $intOrders = [];
         foreach ($orders as $o) {
@@ -53,13 +54,15 @@ class AdminMallhabanaDespachoController extends ModuleAdminController {
         $ordersIds = $this->service->getOrdersByProvidersIDs($supplier, $start_date, $end_date, $carrier);
         $fullOrders = array_merge($ordersIds, $intOrders);
         $supplier = new Supplier($supplier, 1);
-
+        $carrie = new Carrier($carrier, 1);
+        
         if (Tools::isSubmit('submitDespacho')){
            try {  
                 $this->context->smarty->assign([
                     'provider' => $supplier->name,
                     'genDate' =>  (!empty( $start_date) && !empty($end_date)) ? "Desde ".  $start_date." hasta ". $end_date : "",
-                    'orders' =>  implode(", ", $fullOrders)
+                    'orders' =>  implode(", ", $fullOrders),
+                    'carrier' => $carrie->name
                 ]);
 
                 $pdf = new PDF($data, 'Despacho', Context::getContext()->smarty);
@@ -114,7 +117,8 @@ class AdminMallhabanaDespachoController extends ModuleAdminController {
                     'date' => date('Y-m-d'),
                     'products' => $products,
                     'orders' => $orders,
-                    'customers' => $customers                    
+                    'customers' => $customers
+                                      
                 ]);
 
                 $pdf = new PDF($orders, 'DespachoProvider', Context::getContext()->smarty);

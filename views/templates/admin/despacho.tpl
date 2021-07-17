@@ -19,6 +19,7 @@
 				<label class="control-label col-lg-3 required">Transportista</label>
 				<div class="col-lg-9">
 					<select name="carrier" required="required">
+						<option value="0">Todos</option>
 						{foreach $carriers as $carrier}
 							<option value="{$carrier->id}">{$carrier->name}</option>
 						{/foreach}
